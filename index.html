@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tier List Studio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        body {
+            background-color: #08080a;
+            color: #ededef;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 10px;
+            min-height: 100vh;
+        }
+
+        header {
+            width: 100%;
+            max-width: 1240px;
+            margin-bottom: 20px;
+            background: rgba(18, 18, 22, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .brand {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+        }
+
+        .brand-dot {
+            width: 6px;
+            height: 18px;
+            background: linear-gradient(180deg, #ffffff 0%, #52525b 100%);
+            border-radius: 3px;
+        }
+
+        .scheme-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .scheme-select {
+            background: #121215;
+            color: #ededef;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            cursor: pointer;
+            min-width: 150px;
+            transition: border-color 0.2s;
+        }
+
+        .scheme-select:focus {
+            border-color: #a1a1aa;
+        }
+
+        .btn {
+            background: #1c1c21;
+            color: #d4d4d8;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 7px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: #27272a;
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: #ffffff;
+            color: #09090b;
+            border-color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #e4e4e7;
+            color: #000000;
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        #tier-board {
+            width: 100%;
+            max-width: 1240px;
+            background: #000000;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.9);
+        }
+
+        .tier-row {
+            display: flex;
+            min-height: 88px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: #0d0d10;
+            position: relative;
+        }
+
+        .tier-row:last-child {
+            border-bottom: none;
+        }
+
+        .row-header {
+            width: 130px;
+            min-width: 130px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            position: relative;
+            z-index: 2;
+            box-shadow: inset -2px 0 10px rgba(0,0,0,0.3);
+        }
+
+        .row-title {
+            font-weight: 800;
+            font-size: 15px;
+            text-align: center;
+            word-break: break-all;
+            outline: none;
+            width: 100%;
+            line-height: 1.3;
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .row-dropzone {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 0;
+            padding: 0;
+            background: #111114;
+            min-height: 88px;
+        }
+
+        .row-actions {
+            width: 36px;
+            min-width: 36px;
+            background: #09090b;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 4px;
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            opacity: 0.3;
+            transition: opacity 0.2s;
+            z-index: 2;
+        }
+
+        .tier-row:hover .row-actions {
+            opacity: 1;
+        }
+
+        .row-btn {
+            background: none;
+            border: none;
+            color: #71717a;
+            cursor: pointer;
+            width: 24px;
+            height: 24px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .row-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        .row-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .item-card {
+            height: 88px;
+            width: auto;
+            position: relative;
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000000;
+            touch-action: none;
+            border-right: 1px solid rgba(0, 0, 0, 0.5);
+            transition: filter 0.15s;
+        }
+
+        .item-card:hover {
+            filter: brightness(1.15);
+        }
+
+        .item-card img {
+            height: 100%;
+            width: auto;
+            display: block;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .sortable-ghost {
+            opacity: 0.2;
+        }
+
+        .sortable-chosen {
+            outline: 2px solid #ffffff;
+            z-index: 10;
+        }
+
+        .pool-section {
+            width: 100%;
+            max-width: 1240px;
+            margin-top: 24px;
+            background: rgba(18, 18, 22, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            padding: 16px;
+        }
+
+        .pool-header {
+            font-size: 13px;
+            color: #a1a1aa;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        #item-pool {
+            min-height: 90px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 10px;
+            background: #08080a;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        #item-pool .item-card {
+            height: 72px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        #file-input { display: none; }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            background: transparent;
+            opacity: 0.4;
+            transition: opacity 0.2s;
+        }
+
+        input[type="color"]:hover { opacity: 1; }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 1px solid rgba(0,0,0,0.5); border-radius: 50%; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal img { max-width: 90%; max-height: 85vh; border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.9); }
+
+        @media (max-width: 600px) {
+            body { padding: 8px 4px; }
+            header { padding: 12px; border-radius: 12px; }
+            .row-header { width: 90px; min-width: 90px; padding: 4px; }
+            .row-title { font-size: 12px; }
+            .tier-row, .row-dropzone, .item-card { height: 64px; min-height: 64px; }
+            #item-pool .item-card { height: 54px; }
+            .row-actions { width: 30px; min-width: 30px; opacity: 0.8; }
+            .btn { padding: 6px 10px; font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-top">
+            <div class="brand">
+                <div class="brand-dot"></div>
+                Tier List Studio
+            </div>
+            <div class="toolbar">
+                <button class="btn" onclick="document.getElementById('file-input').click()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    上传图片
+                </button>
+                <input type="file" id="file-input" multiple accept="image/*" onchange="handleImageUpload(event)">
+                <button class="btn" onclick="addNewRowUI()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    添加行
+                </button>
+                <button class="btn btn-primary" onclick="exportAsImage()">导出高清图</button>
+            </div>
+        </div>
+
+        <div class="scheme-bar">
+            <span style="font-size: 12px; color: #71717a;">当前方案:</span>
+            <select id="scheme-select" class="scheme-select" onchange="switchScheme(this.value)"></select>
+            <button class="btn" onclick="createNewScheme()">新建</button>
+            <button class="btn" onclick="renameCurrentScheme()">重命名</button>
+            <button class="btn btn-danger" onclick="deleteCurrentScheme()">删除</button>
+        </div>
+    </header>
+
+    <div id="tier-board"></div>
+
+    <div class="pool-section">
+        <div class="pool-header">
+            <span>素材池 (双击图片可放大预览)</span>
+            <button class="btn btn-danger" style="font-size: 11px; padding: 4px 8px;" onclick="clearPool()">清空素材池</button>
+        </div>
+        <div id="item-pool" class="dropzone"></div>
+    </div>
+
+    <div id="preview-modal" class="modal" onclick="this.style.display='none'">
+        <img id="preview-img" src="" alt="preview">
+    </div>
+
+    <script>
+        const defaultColors = ['#ffffff', '#e4e4e7', '#a1a1aa', '#71717a', '#3f3f46', '#27272a'];
+        
+        let appData = {
+            activeSchemeId: '',
+            schemes: {}
+        };
+
+        let sortableInstances = [];
+        let db = null;
+
+        function initIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('TierListStudioDB', 1);
+                request.onupgradeneeded = (e) => {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains('store')) {
+                        db.createObjectStore('store');
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve();
+                };
+                request.onerror = (e) => reject(e);
+            });
+        }
+
+        function saveToDB() {
+            if (!db) return;
+            syncCurrentStateToData();
+            const tx = db.transaction('store', 'readwrite');
+            const store = tx.objectStore('store');
+            store.put(appData, 'app_data');
+        }
+
+        function loadFromDB() {
+            return new Promise((resolve) => {
+                if (!db) return resolve(null);
+                const tx = db.transaction('store', 'readonly');
+                const store = tx.objectStore('store');
+                const req = store.get('app_data');
+                req.onsuccess = () => resolve(req.result || null);
+                req.onerror = () => resolve(null);
+            });
+        }
+
+        window.onload = async () => {
+            await initIndexedDB();
+            const savedData = await loadFromDB();
+            if (savedData) {
+                appData = savedData;
+            }
+            if (!appData.activeSchemeId || !appData.schemes[appData.activeSchemeId]) {
+                initDefaultScheme();
+            }
+            renderSchemeSelect();
+            renderActiveScheme();
+        };
+
+        function initDefaultScheme() {
+            const defaultId = 'scheme_' + Date.now();
+            appData.schemes[defaultId] = {
+                id: defaultId,
+                name: '默认方案',
+                rows: [
+                    { id: 'r1', title: 'S 级', color: '#ffffff' },
+                    { id: 'r2', title: 'A 级', color: '#d4d4d8' },
+                    { id: 'r3', title: 'B 级', color: '#71717a' }
+                ],
+                items: {}
+            };
+            appData.activeSchemeId = defaultId;
+            saveToDB();
+        }
+
+        function renderSchemeSelect() {
+            const select = document.getElementById('scheme-select');
+            select.innerHTML = '';
+            Object.keys(appData.schemes).forEach(id => {
+                const scheme = appData.schemes[id];
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = scheme.name;
+                if (id === appData.activeSchemeId) option.selected = true;
+                select.appendChild(option);
+            });
+        }
+
+        function switchScheme(schemeId) {
+            saveToDB();
+            appData.activeSchemeId = schemeId;
+            saveToDB();
+            renderActiveScheme();
+        }
+
+        function createNewScheme() {
+            const name = prompt('请输入新方案名称：', '未命名方案');
+            if (!name) return;
+            saveToDB();
+
+            const newId = 'scheme_' + Date.now();
+            appData.schemes[newId] = {
+                id: newId,
+                name: name,
+                rows: [
+                    { id: 'r1', title: 'T0', color: '#ffffff' },
+                    { id: 'r2', title: 'T1', color: '#a1a1aa' }
+                ],
+                items: {}
+            };
+            appData.activeSchemeId = newId;
+            saveToDB();
+            renderSchemeSelect();
+            renderActiveScheme();
+        }
+
+        function renameCurrentScheme() {
+            const current = appData.schemes[appData.activeSchemeId];
+            const newName = prompt('重命名方案：', current.name);
+            if (newName) {
+                current.name = newName;
+                saveToDB();
+                renderSchemeSelect();
+            }
+        }
+
+        function deleteCurrentScheme() {
+            const keys = Object.keys(appData.schemes);
+            if (keys.length <= 1) {
+                alert('请至少保留一个方案！');
+                return;
+            }
+            if (confirm(`确认删除方案「${appData.schemes[appData.activeSchemeId].name}」？`)) {
+                delete appData.schemes[appData.activeSchemeId];
+                appData.activeSchemeId = Object.keys(appData.schemes)[0];
+                saveToDB();
+                renderSchemeSelect();
+                renderActiveScheme();
+            }
+        }
+
+        function renderActiveScheme() {
+            destroySortables();
+            const board = document.getElementById('tier-board');
+            const pool = document.getElementById('item-pool');
+            board.innerHTML = '';
+            pool.innerHTML = '';
+
+            const scheme = appData.schemes[appData.activeSchemeId];
+
+            scheme.rows.forEach(row => {
+                const rowEl = createRowDOM(row.id, row.title, row.color);
+                board.appendChild(rowEl);
+            });
+
+            Object.keys(scheme.items || {}).forEach(itemId => {
+                const item = scheme.items[itemId];
+                const card = createItemCardDOM(itemId, item.src);
+                
+                if (item.location === 'pool') {
+                    pool.appendChild(card);
+                } else {
+                    const targetZone = document.querySelector(`#${item.location} .row-dropzone`);
+                    if (targetZone) targetZone.appendChild(card);
+                    else pool.appendChild(card);
+                }
+            });
+
+            initSortables();
+        }
+
+        function createRowDOM(rowId, title, color) {
+            const row = document.createElement('div');
+            row.className = 'tier-row';
+            row.id = rowId;
+
+            const textColor = getContrastYIQ(color);
+
+            row.innerHTML = `
+                <div class="row-header" style="background-color: ${color};">
+                    <span class="row-title" contenteditable="true" onblur="saveToDB()" style="color: ${textColor};">${title}</span>
+                    <input type="color" value="${color}" onchange="changeRowColor(this)">
+                </div>
+                <div class="row-dropzone dropzone"></div>
+                <div class="row-actions">
+                    <button class="row-btn" onclick="moveRow(this, -1)" title="上移">
+                        <svg viewBox="0 0 24 24"><path d="M12 8l-6 6h12z"/></svg>
+                    </button>
+                    <button class="row-btn" onclick="moveRow(this, 1)" title="下移">
+                        <svg viewBox="0 0 24 24"><path d="M12 16l6-6H6z"/></svg>
+                    </button>
+                    <button class="row-btn" onclick="deleteRow(this)" title="删除">
+                        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </button>
+                </div>
+            `;
+            return row;
+        }
+
+        function createItemCardDOM(id, src) {
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.id = id;
+            card.innerHTML = `<img src="${src}">`;
+            
+            card.ondblclick = () => {
+                document.getElementById('preview-img').src = src;
+                document.getElementById('preview-modal').style.display = 'flex';
+            };
+            return card;
+        }
+
+        function addNewRowUI() {
+            const rowId = 'row_' + Date.now();
+            const color = defaultColors[document.querySelectorAll('.tier-row').length % defaultColors.length];
+            const board = document.getElementById('tier-board');
+            const rowEl = createRowDOM(rowId, '新层级', color);
+            board.appendChild(rowEl);
+
+            initSingleSortable(rowEl.querySelector('.row-dropzone'));
+            saveToDB();
+        }
+
+        function changeRowColor(input) {
+            const header = input.parentElement;
+            const newColor = input.value;
+            header.style.backgroundColor = newColor;
+            header.querySelector('.row-title').style.color = getContrastYIQ(newColor);
+            saveToDB();
+        }
+
+        function moveRow(btn, direction) {
+            const row = btn.closest('.tier-row');
+            if (direction === -1 && row.previousElementSibling) {
+                row.parentNode.insertBefore(row, row.previousElementSibling);
+            } else if (direction === 1 && row.nextElementSibling) {
+                row.parentNode.insertBefore(row.nextElementSibling, row);
+            }
+            saveToDB();
+        }
+
+        function deleteRow(btn) {
+            const row = btn.closest('.tier-row');
+            const dropzone = row.querySelector('.row-dropzone');
+            const pool = document.getElementById('item-pool');
+
+            while (dropzone.firstChild) {
+                pool.appendChild(dropzone.firstChild);
+            }
+            row.remove();
+            saveToDB();
+        }
+
+        function handleImageUpload(event) {
+            const files = event.target.files;
+            if (!files.length) return;
+
+            Array.from(files).forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+                compressImage(file, (compressedBase64) => {
+                    const itemId = 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                    const card = createItemCardDOM(itemId, compressedBase64);
+                    document.getElementById('item-pool').appendChild(card);
+                    saveToDB();
+                });
+            });
+            event.target.value = '';
+        }
+
+        function compressImage(file, callback) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const targetHeight = 180;
+                    const scale = targetHeight / img.height;
+                    canvas.height = targetHeight;
+                    canvas.width = img.width * scale;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    callback(canvas.toDataURL('image/jpeg', 0.82));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearPool() {
+            if (confirm('确认清空所有未分类图片？')) {
+                document.getElementById('item-pool').innerHTML = '';
+                saveToDB();
+            }
+        }
+
+        function initSortables() {
+            destroySortables();
+            document.querySelectorAll('.dropzone').forEach(el => {
+                initSingleSortable(el);
+            });
+        }
+
+        function initSingleSortable(el) {
+            const s = new Sortable(el, {
+                group: 'tier-group',
+                animation: 200,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                delay: 60,
+                delayOnTouchOnly: true,
+                onEnd: () => {
+                    saveToDB();
+                }
+            });
+            sortableInstances.push(s);
+        }
+
+        function destroySortables() {
+            sortableInstances.forEach(s => s.destroy());
+            sortableInstances = [];
+        }
+
+        function syncCurrentStateToData() {
+            const currentScheme = appData.schemes[appData.activeSchemeId];
+            if (!currentScheme) return;
+
+            const rows = [];
+            document.querySelectorAll('.tier-row').forEach(rowEl => {
+                rows.push({
+                    id: rowEl.id,
+                    title: rowEl.querySelector('.row-title').innerText,
+                    color: rgbToHex(rowEl.querySelector('.row-header').style.backgroundColor)
+                });
+            });
+            currentScheme.rows = rows;
+
+            const items = {};
+            document.querySelectorAll('.item-card').forEach(card => {
+                const parentZone = card.parentElement;
+                let location = 'pool';
+                if (parentZone.id !== 'item-pool') {
+                    location = parentZone.closest('.tier-row').id;
+                }
+                items[card.id] = {
+                    src: card.querySelector('img').src,
+                    location: location
+                };
+            });
+            currentScheme.items = items;
+        }
+
+        function getContrastYIQ(hexcolor){
+            if(!hexcolor || !hexcolor.startsWith('#')) return '#000000';
+            hexcolor = hexcolor.replace("#", "");
+            if(hexcolor.length === 3) hexcolor = hexcolor.split('').map(h => h + h).join('');
+            var r = parseInt(hexcolor.substr(0,2),16);
+            var g = parseInt(hexcolor.substr(2,2),16);
+            var b = parseInt(hexcolor.substr(4,2),16);
+            var yiq = ((r*299)+(g*587)+(b*114))/1000;
+            return (yiq >= 128) ? '#000000' : '#ffffff';
+        }
+
+        function rgbToHex(rgb) {
+            if (!rgb || rgb.startsWith('#')) return rgb || '#ffffff';
+            const rgbValues = rgb.match(/\d+/g);
+            if (!rgbValues) return '#ffffff';
+            return "#" + ((1 << 24) + (parseInt(rgbValues[0]) << 16) + (parseInt(rgbValues[1]) << 8) + parseInt(rgbValues[2])).toString(16).slice(1);
+        }
+
+        function exportAsImage() {
+            const board = document.getElementById('tier-board');
+            const actionBtns = board.querySelectorAll('.row-actions');
+            actionBtns.forEach(b => b.style.display = 'none');
+
+            html2canvas(board, {
+                backgroundColor: '#000000',
+                scale: 2
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `${appData.schemes[appData.activeSchemeId].name}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                actionBtns.forEach(b => b.style.display = 'flex');
+            });
+        }
+    </script>
+</body>
+</html>
