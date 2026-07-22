@@ -33,7 +33,7 @@
             width: 100%;
             max-width: 1240px;
             margin-bottom: 20px;
-            background: rgba(18, 18, 22, 0.8);
+            background: rgba(18, 18, 22, 0.85);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -77,7 +77,7 @@
             gap: 8px;
             flex-wrap: wrap;
             background: rgba(0, 0, 0, 0.4);
-            padding: 6px 10px;
+            padding: 8px 12px;
             border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
@@ -85,18 +85,18 @@
         .scheme-select {
             background: #121215;
             color: #ededef;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             padding: 6px 12px;
             border-radius: 6px;
             font-size: 13px;
             outline: none;
             cursor: pointer;
-            min-width: 150px;
+            min-width: 160px;
             transition: border-color 0.2s;
         }
 
         .scheme-select:focus {
-            border-color: #a1a1aa;
+            border-color: #ffffff;
         }
 
         .btn {
@@ -137,6 +137,17 @@
             color: #000000;
         }
 
+        .btn-success {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .btn-success:hover {
+            background: rgba(34, 197, 94, 0.25);
+            color: #86efac;
+        }
+
         .btn-danger {
             background: rgba(239, 68, 68, 0.1);
             color: #f87171;
@@ -158,7 +169,7 @@
             width: 100%;
             max-width: 1240px;
             background: #000000;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             border-radius: 14px;
             overflow: hidden;
             display: flex;
@@ -169,7 +180,7 @@
         .tier-row {
             display: flex;
             min-height: 88px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             background: #0d0d10;
             position: relative;
         }
@@ -273,7 +284,7 @@
         }
 
         .item-card:hover {
-            filter: brightness(1.15);
+            filter: brightness(1.1);
         }
 
         .item-card img {
@@ -282,6 +293,42 @@
             display: block;
             object-fit: contain;
             pointer-events: none;
+        }
+
+        .card-del-btn {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 18px;
+            height: 18px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.15s;
+            z-index: 10;
+        }
+
+        .card-del-btn svg {
+            width: 10px;
+            height: 10px;
+            stroke: currentColor;
+            stroke-width: 2.5;
+        }
+
+        .item-card:hover .card-del-btn {
+            opacity: 1;
+        }
+
+        .card-del-btn:hover {
+            background: #ef4444;
+            color: #ffffff;
+            transform: scale(1.15);
         }
 
         .sortable-ghost {
@@ -365,6 +412,29 @@
 
         .modal img { max-width: 90%; max-height: 85vh; border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,0.9); }
 
+        #toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(255, 255, 255, 0.95);
+            color: #000000;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 2000;
+            pointer-events: none;
+        }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
         @media (max-width: 600px) {
             body { padding: 8px 4px; }
             header { padding: 12px; border-radius: 12px; }
@@ -374,6 +444,7 @@
             #item-pool .item-card { height: 54px; }
             .row-actions { width: 30px; min-width: 30px; opacity: 0.8; }
             .btn { padding: 6px 10px; font-size: 11px; }
+            .card-del-btn { opacity: 0.8; }
         }
     </style>
 </head>
@@ -402,9 +473,10 @@
         <div class="scheme-bar">
             <span style="font-size: 12px; color: #71717a;">当前方案:</span>
             <select id="scheme-select" class="scheme-select" onchange="switchScheme(this.value)"></select>
+            <button class="btn btn-success" onclick="manualSaveScheme()">保存方案</button>
             <button class="btn" onclick="createNewScheme()">新建</button>
             <button class="btn" onclick="renameCurrentScheme()">重命名</button>
-            <button class="btn btn-danger" onclick="deleteCurrentScheme()">删除</button>
+            <button class="btn btn-danger" onclick="deleteCurrentScheme()">删除方案</button>
         </div>
     </header>
 
@@ -412,7 +484,7 @@
 
     <div class="pool-section">
         <div class="pool-header">
-            <span>素材池 (双击图片可放大预览)</span>
+            <span>素材池 (双击图片放大预览，鼠标悬浮点击 ✕ 删除)</span>
             <button class="btn btn-danger" style="font-size: 11px; padding: 4px 8px;" onclick="clearPool()">清空素材池</button>
         </div>
         <div id="item-pool" class="dropzone"></div>
@@ -421,6 +493,8 @@
     <div id="preview-modal" class="modal" onclick="this.style.display='none'">
         <img id="preview-img" src="" alt="preview">
     </div>
+
+    <div id="toast">操作成功</div>
 
     <script>
         const defaultColors = ['#ffffff', '#e4e4e7', '#a1a1aa', '#71717a', '#3f3f46', '#27272a'];
@@ -432,6 +506,15 @@
 
         let sortableInstances = [];
         let db = null;
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
 
         function initIndexedDB() {
             return new Promise((resolve, reject) => {
@@ -450,12 +533,15 @@
             });
         }
 
-        function saveToDB() {
+        function saveToDB(silent = true) {
             if (!db) return;
             syncCurrentStateToData();
             const tx = db.transaction('store', 'readwrite');
             const store = tx.objectStore('store');
             store.put(appData, 'app_data');
+            if (!silent) {
+                showToast("方案保存成功！");
+            }
         }
 
         function loadFromDB() {
@@ -498,6 +584,10 @@
             saveToDB();
         }
 
+        function manualSaveScheme() {
+            saveToDB(false);
+        }
+
         function renderSchemeSelect() {
             const select = document.getElementById('scheme-select');
             select.innerHTML = '';
@@ -512,16 +602,17 @@
         }
 
         function switchScheme(schemeId) {
-            saveToDB();
+            saveToDB(true);
             appData.activeSchemeId = schemeId;
-            saveToDB();
+            saveToDB(true);
             renderActiveScheme();
+            showToast(`已切换至: ${appData.schemes[schemeId].name}`);
         }
 
         function createNewScheme() {
             const name = prompt('请输入新方案名称：', '未命名方案');
             if (!name) return;
-            saveToDB();
+            saveToDB(true);
 
             const newId = 'scheme_' + Date.now();
             appData.schemes[newId] = {
@@ -534,9 +625,10 @@
                 items: {}
             };
             appData.activeSchemeId = newId;
-            saveToDB();
+            saveToDB(true);
             renderSchemeSelect();
             renderActiveScheme();
+            showToast("新方案创建成功");
         }
 
         function renameCurrentScheme() {
@@ -544,8 +636,9 @@
             const newName = prompt('重命名方案：', current.name);
             if (newName) {
                 current.name = newName;
-                saveToDB();
+                saveToDB(true);
                 renderSchemeSelect();
+                showToast("方案已重命名");
             }
         }
 
@@ -558,9 +651,10 @@
             if (confirm(`确认删除方案「${appData.schemes[appData.activeSchemeId].name}」？`)) {
                 delete appData.schemes[appData.activeSchemeId];
                 appData.activeSchemeId = Object.keys(appData.schemes)[0];
-                saveToDB();
+                saveToDB(true);
                 renderSchemeSelect();
                 renderActiveScheme();
+                showToast("方案已删除");
             }
         }
 
@@ -603,7 +697,7 @@
 
             row.innerHTML = `
                 <div class="row-header" style="background-color: ${color};">
-                    <span class="row-title" contenteditable="true" onblur="saveToDB()" style="color: ${textColor};">${title}</span>
+                    <span class="row-title" contenteditable="true" onblur="saveToDB(true)" style="color: ${textColor};">${title}</span>
                     <input type="color" value="${color}" onchange="changeRowColor(this)">
                 </div>
                 <div class="row-dropzone dropzone"></div>
@@ -626,13 +720,30 @@
             const card = document.createElement('div');
             card.className = 'item-card';
             card.id = id;
-            card.innerHTML = `<img src="${src}">`;
             
-            card.ondblclick = () => {
+            card.innerHTML = `
+                <img src="${src}">
+                <div class="card-del-btn" onclick="deleteSingleItem('${id}', event)" title="删除图片">
+                    <svg viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </div>
+            `;
+            
+            card.ondblclick = (e) => {
+                if (e.target.closest('.card-del-btn')) return;
                 document.getElementById('preview-img').src = src;
                 document.getElementById('preview-modal').style.display = 'flex';
             };
             return card;
+        }
+
+        function deleteSingleItem(itemId, event) {
+            if (event) event.stopPropagation();
+            const card = document.getElementById(itemId);
+            if (card) {
+                card.remove();
+                saveToDB(true);
+                showToast("图片已删除");
+            }
         }
 
         function addNewRowUI() {
@@ -643,7 +754,8 @@
             board.appendChild(rowEl);
 
             initSingleSortable(rowEl.querySelector('.row-dropzone'));
-            saveToDB();
+            saveToDB(true);
+            showToast("层级已添加");
         }
 
         function changeRowColor(input) {
@@ -651,7 +763,7 @@
             const newColor = input.value;
             header.style.backgroundColor = newColor;
             header.querySelector('.row-title').style.color = getContrastYIQ(newColor);
-            saveToDB();
+            saveToDB(true);
         }
 
         function moveRow(btn, direction) {
@@ -661,7 +773,7 @@
             } else if (direction === 1 && row.nextElementSibling) {
                 row.parentNode.insertBefore(row.nextElementSibling, row);
             }
-            saveToDB();
+            saveToDB(true);
         }
 
         function deleteRow(btn) {
@@ -673,20 +785,26 @@
                 pool.appendChild(dropzone.firstChild);
             }
             row.remove();
-            saveToDB();
+            saveToDB(true);
+            showToast("层级已移除，素材已退回池中");
         }
 
         function handleImageUpload(event) {
             const files = event.target.files;
             if (!files.length) return;
 
+            let count = 0;
             Array.from(files).forEach(file => {
                 if (!file.type.startsWith('image/')) return;
                 compressImage(file, (compressedBase64) => {
                     const itemId = 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
                     const card = createItemCardDOM(itemId, compressedBase64);
                     document.getElementById('item-pool').appendChild(card);
-                    saveToDB();
+                    count++;
+                    if (count === files.length) {
+                        saveToDB(true);
+                        showToast(`已成功导入 ${count} 张图片`);
+                    }
                 });
             });
             event.target.value = '';
@@ -714,7 +832,8 @@
         function clearPool() {
             if (confirm('确认清空所有未分类图片？')) {
                 document.getElementById('item-pool').innerHTML = '';
-                saveToDB();
+                saveToDB(true);
+                showToast("素材池已清空");
             }
         }
 
@@ -734,7 +853,7 @@
                 delay: 60,
                 delayOnTouchOnly: true,
                 onEnd: () => {
-                    saveToDB();
+                    saveToDB(true);
                 }
             });
             sortableInstances.push(s);
@@ -753,7 +872,7 @@
             document.querySelectorAll('.tier-row').forEach(rowEl => {
                 rows.push({
                     id: rowEl.id,
-                    title: rowEl.querySelector('.row-title').innerText,
+                    title: rowEl.querySelector('.row-title').innerText.trim(),
                     color: rgbToHex(rowEl.querySelector('.row-header').style.backgroundColor)
                 });
             });
@@ -764,7 +883,8 @@
                 const parentZone = card.parentElement;
                 let location = 'pool';
                 if (parentZone.id !== 'item-pool') {
-                    location = parentZone.closest('.tier-row').id;
+                    const parentRow = parentZone.closest('.tier-row');
+                    if (parentRow) location = parentRow.id;
                 }
                 items[card.id] = {
                     src: card.querySelector('img').src,
@@ -792,21 +912,36 @@
             return "#" + ((1 << 24) + (parseInt(rgbValues[0]) << 16) + (parseInt(rgbValues[1]) << 8) + parseInt(rgbValues[2])).toString(16).slice(1);
         }
 
-        function exportAsImage() {
+        async function exportAsImage() {
+            showToast("正在渲染高清图片...");
             const board = document.getElementById('tier-board');
             const actionBtns = board.querySelectorAll('.row-actions');
-            actionBtns.forEach(b => b.style.display = 'none');
+            
+            actionBtns.forEach(b => b.style.visibility = 'hidden');
 
-            html2canvas(board, {
-                backgroundColor: '#000000',
-                scale: 2
-            }).then(canvas => {
+            try {
+                const canvas = await html2canvas(board, {
+                    backgroundColor: '#000000',
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false,
+                    scrollX: 0,
+                    scrollY: -window.scrollY
+                });
+
                 const link = document.createElement('a');
-                link.download = `${appData.schemes[appData.activeSchemeId].name}.png`;
-                link.href = canvas.toDataURL('image/png');
+                const schemeName = appData.schemes[appData.activeSchemeId]?.name || 'TierList';
+                link.download = `${schemeName}_${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png', 1.0);
                 link.click();
-                actionBtns.forEach(b => b.style.display = 'flex');
-            });
+                showToast("导出成功！");
+            } catch (err) {
+                console.error("导出生成失败:", err);
+                alert("导出失败，请重试！");
+            } finally {
+                actionBtns.forEach(b => b.style.visibility = 'visible');
+            }
         }
     </script>
 </body>
