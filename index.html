@@ -81,9 +81,6 @@
 
     <!-- 副文 -->
     <div class="w-text" id="wText"></div>
-
-    <!-- kept for syncUI compat -->
-    <div class="w-title" id="wTitle" style="display:none"></div>
   </div>
   <div class="w-tap">
     <span></span><span></span><span></span>
@@ -615,7 +612,8 @@
       <div class="settings-scroll">
 
         <!-- 头像 -->
-        <div class="sblock"><div class="sblock-label">头像</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">头像</div>
           <div class="sav-row">
             <div class="sav-item" onclick="uploadImg('selfAvatar')">
               <div class="sav-ring"><img data-img="selfAvatar" class="ph sav-img"></div>
@@ -626,10 +624,12 @@
               <span>彼</span>
             </div>
           </div>
-        </div></div>
+          <div class="sav-oppname editable" data-key="opp_name" data-placeholder="彼"></div>
+        </div>
 
         <!-- 布局 -->
-        <div class="sblock collapsed"><div class="sblock-label">布局</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">布局</div>
           <div class="slayout-switch">
             <div class="slayout-opt" data-v="1" onclick="setLayout(1)">
               <div class="slayout-preview l1p">
@@ -648,10 +648,11 @@
               <span>Ⅱ</span>
             </div>
           </div>
-        </div></div>
+        </div>
 
         <!-- 背景 -->
-        <div class="sblock collapsed"><div class="sblock-label">首页背景</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">首页背景</div>
           <div class="sbtn-row">
             <button class="sbtn" onclick="triggerHomeBgPick()">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -672,10 +673,11 @@
               <div class="sw" id="sw_hidePolarBg" onclick="cfgToggle('hidePolarBg')"><div class="sw-indicator"></div></div>
             </div>
           </div>
-        </div></div>
+        </div>
 
         <!-- 导航 -->
-        <div class="sblock collapsed"><div class="sblock-label">内容</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">内容</div>
           <div class="snav-list">
             <div class="snav-item" onclick="openApp('textsApp')">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -688,7 +690,7 @@
               <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           </div>
-        </div></div>
+        </div>
 
       </div>
     </div>
@@ -698,32 +700,28 @@
       <div class="settings-scroll">
 
         <!-- 主题 -->
-        <div class="sblock"><div class="sblock-label">主题</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">主题</div>
           <div class="stheme-row">
-            <div class="stheme-opt light" data-theme="light" onclick="setTheme('light')">
-              <div class="stheme-orb"></div>
-              <span>浅色</span>
+            <div class="stheme-opt light" data-theme="light">
+              <div class="stheme-orb" onclick="event.stopPropagation();pickThemeBg('light')"></div>
+              <span onclick="setTheme('light')">浅色</span>
             </div>
-            <div class="stheme-opt dark" data-theme="dark" onclick="setTheme('dark')">
-              <div class="stheme-orb"></div>
-              <span>深色</span>
+            <div class="stheme-opt dark" data-theme="dark">
+              <div class="stheme-orb" onclick="event.stopPropagation();pickThemeBg('dark')"></div>
+              <span onclick="setTheme('dark')">深色</span>
             </div>
-            <div class="stheme-opt system" data-theme="system" onclick="setTheme('system')">
-              <div class="stheme-orb"></div>
-              <span>跟随</span>
-            </div>
-          </div>
-          <div class="saccent-row">
-            <span class="sinput-label">主题色</span>
-            <div class="saccent-controls">
-              <input type="color" id="cfg_accentColor" class="saccent-picker" onchange="setAccentColor(this.value)">
-              <span class="saccent-reset" onclick="resetAccentColor()">恢复默认</span>
+            <div class="stheme-opt system" data-theme="system">
+              <div class="stheme-orb" onclick="event.stopPropagation();setTheme('system')"></div>
+              <span onclick="setTheme('system')">跟随</span>
             </div>
           </div>
-        </div></div>
+          <input type="color" id="themeBgPicker" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;">
+        </div>
 
         <!-- 字号 -->
-        <div class="sblock collapsed"><div class="sblock-label">字号</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">字号</div>
           <div class="ssize-grid">
             <div class="ssize-item">
               <span class="ssize-label">界面</span>
@@ -742,10 +740,11 @@
               </div>
             </div>
           </div>
-        </div></div>
+        </div>
 
         <!-- 导航 -->
-        <div class="sblock collapsed"><div class="sblock-label">更多</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">更多</div>
           <div class="snav-list">
             <div class="snav-item" onclick="openFontModal()">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
@@ -758,7 +757,7 @@
               <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           </div>
-        </div></div>
+        </div>
 
       </div>
     </div>
@@ -768,7 +767,8 @@
       <div class="settings-scroll">
 
         <!-- 聊天样式 -->
-        <div class="sblock"><div class="sblock-label">样式</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">样式</div>
           <div class="chat-style-grid">
             <div class="cs-card" data-s="1" onclick="setChatStyle(1)">
               <div class="cs-preview p1"><div class="cs-bub r"></div><div class="cs-bub l"></div><div class="cs-bub r sm"></div></div>
@@ -787,11 +787,11 @@
               <span>日记</span>
             </div>
           </div>
-        </div></div>
+        </div>
 
         <!-- 显示 -->
-        <div class="sblock collapsed"><div class="sblock-label">显示</div><div class="sblock-body">
-          <div class="stoggle-mini-label">身份</div>
+        <div class="sblock">
+          <div class="sblock-label">显示</div>
           <div class="stoggle-group">
             <div class="stoggle-row">
               <span>头像</span>
@@ -801,17 +801,10 @@
               <span>对方名称</span>
               <div class="sw" id="sw_showName" onclick="cfgToggle('showName')"><div class="sw-indicator"></div></div>
             </div>
-            <div class="sinput-row">
-              <span class="sinput-label">对方昵称</span>
-              <input class="inp" type="text" id="oppNameInput" placeholder="彼" maxlength="20" onchange="setOppName(this.value)">
-            </div>
             <div class="stoggle-row">
               <span>我方名称</span>
               <div class="sw" id="sw_showSelfName" onclick="cfgToggle('showSelfName')"><div class="sw-indicator"></div></div>
             </div>
-          </div>
-          <div class="stoggle-mini-label">时间</div>
-          <div class="stoggle-group">
             <div class="stoggle-row">
               <span>时间戳</span>
               <div class="sw" id="sw_showTime" onclick="cfgToggle('showTime')"><div class="sw-indicator"></div></div>
@@ -824,9 +817,6 @@
               <span>对方自定义时间戳</span>
               <div class="sw" id="sw_oppCustomTime" onclick="cfgToggle('oppCustomTime')"><div class="sw-indicator"></div></div>
             </div>
-          </div>
-          <div class="stoggle-mini-label">已读</div>
-          <div class="stoggle-group">
             <div class="stoggle-row">
               <span>我方已读</span>
               <div class="sw" id="sw_showRead" onclick="cfgToggle('showRead')"><div class="sw-indicator"></div></div>
@@ -836,10 +826,11 @@
               <div class="sw" id="sw_showSelfRead" onclick="cfgToggle('showSelfRead')"><div class="sw-indicator"></div></div>
             </div>
           </div>
-        </div></div>
+        </div>
 
         <!-- 行为 -->
-        <div class="sblock collapsed"><div class="sblock-label">行为</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">行为</div>
           <div class="stoggle-group">
             <div class="stoggle-row">
               <span>已读不回</span>
@@ -882,27 +873,22 @@
               <input class="inp sm" type="number" id="activeMax" min="1" max="1440" value="20" onchange="cfgSet('activeMax',+this.value)">
             </div>
           </div>
-        </div></div>
+        </div>
 
         <!-- 表情包 -->
-        <div class="sblock collapsed"><div class="sblock-label">表情包</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">表情包</div>
           <div class="stoggle-group">
             <div class="stoggle-row">
               <span>对方随机发送表情包</span>
               <div class="sw" id="sw_stickerOn" onclick="cfgToggle('stickerOn')"><div class="sw-indicator"></div></div>
             </div>
           </div>
-          <div class="snav-list" style="margin-top:8px;">
-            <div class="snav-item" onclick="openApp('cardsApp');switchCardsTab('stickers')">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="8.6" cy="9.6" r=".9" fill="currentColor" stroke="none"/><circle cx="15.4" cy="9.6" r=".9" fill="currentColor" stroke="none"/><path d="M7.5 14.2c1 1.8 2.8 2.8 4.5 2.8s3.5-1 4.5-2.8"/></svg>
-              <span>管理表情包</span>
-              <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
-          </div>
-        </div></div>
+        </div>
 
         <!-- 群组 -->
-        <div class="sblock collapsed"><div class="sblock-label">群组</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">群组</div>
           <div class="stoggle-group">
             <div class="stoggle-row">
               <span>群聊模式</span>
@@ -916,7 +902,7 @@
               <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           </div>
-        </div></div>
+        </div>
 
       </div>
     </div>
@@ -926,7 +912,8 @@
       <div class="settings-scroll">
 
         <!-- 通知 -->
-        <div class="sblock"><div class="sblock-label">通知</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">通知</div>
           <div class="stoggle-group">
             <div class="stoggle-row">
               <span>浮卡</span>
@@ -948,18 +935,20 @@
               <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           </div>
-        </div></div>
+        </div>
 
         <!-- 音乐 -->
-        <div class="sblock collapsed"><div class="sblock-label">音乐</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">音乐</div>
           <div class="sinput-row">
             <span class="sinput-label">歌曲 URL</span>
             <input class="inp" id="cfg_musicUrl" placeholder="https://…" style="flex:1;min-width:0;text-align:right;font-size:11px;" oninput="cfgSet('musicUrl',this.value.trim())">
           </div>
-        </div></div>
+        </div>
 
         <!-- TTS -->
-        <div class="sblock collapsed"><div class="sblock-label">语音合成 TTS</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">语音合成 TTS</div>
           <div class="stoggle-group">
             <div class="stoggle-row">
               <span>自动朗读</span>
@@ -980,20 +969,12 @@
               <input class="inp" type="password" id="cfg_ttsKey" placeholder="Bearer Token" style="flex:1;min-width:0;text-align:right;" oninput="cfgSet('ttsKey',this.value.trim())">
             </div>
             <div class="sinput-row">
-              <span class="sinput-label">Group ID</span>
-              <input class="inp" id="cfg_ttsGroupId" placeholder="部分老账号必填" style="flex:1;min-width:0;text-align:right;" oninput="cfgSet('ttsGroupId',this.value.trim())">
-            </div>
-            <div class="sinput-row">
               <span class="sinput-label">模型</span>
               <input class="inp" id="cfg_ttsModel" placeholder="speech-01-turbo" style="flex:1;min-width:0;text-align:right;" oninput="cfgSet('ttsModel',this.value.trim())">
             </div>
             <div class="sinput-row">
               <span class="sinput-label">音色 ID</span>
               <input class="inp" id="cfg_ttsVoice" placeholder="male-qn-qingse" style="flex:1;min-width:0;text-align:right;" oninput="cfgSet('ttsVoice',this.value.trim())">
-            </div>
-            <div class="sinput-row">
-              <span class="sinput-label">语气</span>
-              <input class="inp" id="cfg_ttsPrompt" placeholder="温柔、撒娇、小声" style="flex:1;min-width:0;text-align:right;" oninput="cfgSet('ttsPrompt',this.value.trim())">
             </div>
             <div class="sinput-row">
               <span class="sinput-label">语速</span>
@@ -1008,7 +989,7 @@
             <input class="inp stts-input" id="cfg_ttsTestText" placeholder="输入想听的句子…" value="你好，很高兴遇见你。">
             <button class="sbtn" onclick="testMiniMaxTTS()">播放试听</button>
           </div>
-        </div></div>
+        </div>
 
       </div>
     </div>
@@ -1017,7 +998,8 @@
     <div class="stab-panel" id="stab-data">
       <div class="settings-scroll">
 
-        <div class="sblock"><div class="sblock-label">备份</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label">备份</div>
           <div class="snav-list">
             <div class="snav-item" onclick="openBackup()">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -1025,9 +1007,10 @@
               <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           </div>
-        </div></div>
+        </div>
 
-        <div class="sblock collapsed"><div class="sblock-label" style="color:var(--danger,#e74c3c);">危险操作</div><div class="sblock-body">
+        <div class="sblock">
+          <div class="sblock-label" style="color:var(--danger,#e74c3c);">危险操作</div>
           <div class="snav-list">
             <div class="snav-item danger" onclick="clearAllChats()">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
@@ -1040,7 +1023,7 @@
               <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           </div>
-        </div></div>
+        </div>
 
       </div>
     </div>

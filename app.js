@@ -8,24 +8,20 @@ window.DEFAULTS = {
     sentenceJoin:true, activeSend:false, activeMin:5, activeMax:20, nextActiveAt:0,
     popupOn:true, notifOn:false, soundOn:true, showAvatar:true, showName:true,
     showTime:true, showRead:true, showSelfRead:false, showSelfName:false,readText:"",
-    customFont:"", customFontUrl:"", customFontCss:"", customBubble:"", customChatCss:"",
-    accentColor:"",
-    groupMode:false, chatStyle:1, inputPlaceholder:"", welcomeTitle:"",
+    customFont:"", customFontCss:"", customBubble:"", customChatCss:"",
+    groupMode:false, chatStyle:1, inputPlaceholder:"",
     welcomeText:"", timeShowSeconds:false,
     oppTime:"", oppTimeDate:"", oppTimeSetAt:0, oppCustomTime:true,
     musicUrl:"", activeSoundId:"__builtin_thud1__",
 customHomeCss:"", customHomeJs:"", homeVisibility:{}, hideAesBg:false, hidePolarBg:false,minimaxKey: "", minimaxVoice: "male-qn-qingse", autoTTS: false,ttsUrl: "https://api.minimax.chat/v1/t2a_v2",
     ttsKey: "",
-    ttsGroupId: "",
     ttsModel: "speech-01-turbo",
     ttsVoice: "male-qn-qingse",
     ttsSpeed: 1.0,
     ttsVol: 1.0,
-    ttsPrompt: "",
     ttsPersist: false,
     sepPool: ["，","。","！","…","？","～"], sepNoneChance: 20,
-    stickerOn: false,
-    lastSeenVersion: "",
+    stickerOn: false, bgLight: "", bgDark: "",
   },
   imgs: {
   selfAvatar: "", oppAvatar: "",
@@ -67,19 +63,6 @@ customHomeCss:"", customHomeJs:"", homeVisibility:{}, hideAesBg:false, hidePolar
   surveyRecords: []
 };
 
-// ─── 更新说明弹窗：改这两处即可发布新一轮更新提示，版本号变化后所有用户仅弹一次 ───
-const APP_VERSION = "2026.08.14";
-const UPDATE_NOTES = [
-  "整理了设置界面的分组，不用再一项项翻找",
-  "对方昵称现在可以直接在设置里改，不用去文案页找",
-  "连续发送多条消息的间隔缩短，并在等待时显示「正在输入」，更连贯",
-  "修复表情包面板卡顿、数量变多后界面被裁切/挤压的问题",
-  "设置页每个分类现在可折叠收起，默认只展开第一项，一屏看清所有分类",
-  "「显示」项按身份/时间/已读做了分组，避免密密麻麻一长串开关",
-  "外观-主题新增主题色自定义，可以选任意颜色，不再只有固定的红色",
-  "自定义字体拆成两个入口：直链输入（粘贴链接自动引入）和其他方式（自己写CSS），互不干扰，可以只填一个也可以都填"
-];
-
 const DB_NAME="SilentChamberDB", DB_VER=11;
 let DB=null, tempTimelineImg="";
 const SEP_POOL=["，","。","！","…","？","～"];
@@ -102,8 +85,39 @@ let ctxTargetIdx=-1, musicAudio=null, unreadCount=0, popupTimer=null;
 let imgPickKey="", memberPickIdx=-1, isBatchSelecting=false;
 let cardsActiveTab="cards", isStickerBatchSelecting=false, stickerSelected=[];
 
+// ─── 更新说明 ───
+// 版本号只在被明确要求"重写"时才递增；平时新增内容直接往当前版本的 items 里追加。
+// 首次看到某个版本号后会记一个本机标记，之后同版本不再弹出。
+const UPDATE_LOG_VERSION = 1;
+const UPDATE_LOG = [
+  {
+    v: 1,
+    items: [
+      "对方昵称支持在设置内直接点击文字改名",
+      "多条连续消息发送间隔更紧凑，衔接更流畅",
+      "表情包面板改为一次构建、重复使用，解决卡顿与挤压",
+      "新增更新说明弹窗，首次进入展示一次",
+      "主题设定的圆圈现可直接点击更改背景色",
+      "设置界面精简整合",
+      "更换全部消息提示音，音量调整为最大",
+      "清理文案中心内已失效或从未生效的设置项"
+    ]
+  }
+];
+function maybeShowUpdateLog(){
+  const seen = +(localStorage.getItem("updateLogSeen") || 0);
+  if (seen >= UPDATE_LOG_VERSION) return;
+  const html = UPDATE_LOG
+    .filter(e=>e.v<=UPDATE_LOG_VERSION)
+    .sort((a,b)=>b.v-a.v)
+    .map(e=>`<ul class="update-log-list">${e.items.map(t=>`<li>${escapeHtml(t)}</li>`).join("")}</ul>`)
+    .join("");
+  modal("更新说明", `${html}<button class="pill-btn" onclick="closeModal()">知道了</button>`);
+  localStorage.setItem("updateLogSeen", String(UPDATE_LOG_VERSION));
+}
+
 const TEXT_GROUPS = [
-  { h:"开屏", keys:[{k:"welcomeTitle",l:"标题"},{k:"welcomeText",l:"副文"}], isCfg:true },
+  { h:"开屏", keys:[{k:"welcomeText",l:"副文"}], isCfg:true },
   { h:"通用", keys:[{k:"inputPlaceholder",l:"输入占位"},{k:"typingText",l:"输入提示"},{k:"readText",l:"已读文案"}], isCfg:true },
   { h:"布局一", keys:[
     {k:"l1_name",l:"昵称"},{k:"l1_loc",l:"签名"},
@@ -209,7 +223,6 @@ async function init() {
   bindGlobalClose();
   bindPopup();
   bindMosaicLongPress();
-  bindSettingsAccordion();
   syncUI();
   initWelcomeParticles();
   renderChats();
@@ -222,17 +235,7 @@ async function init() {
   initOppTime();
 
   matchMedia("(prefers-color-scheme:dark)").addEventListener("change", ()=>{ if(cfg.theme==="system") applyTheme(); });
-
-  maybeShowUpdateNotice();
-}
-
-// 只在版本号变化后的首次进入弹出一次，之后无论怎么关都不会再自动出现
-async function maybeShowUpdateNotice(){
-  if (cfg.lastSeenVersion === APP_VERSION) return;
-  cfg.lastSeenVersion = APP_VERSION;
-  await saveAll();
-  const list = UPDATE_NOTES.map(t=>`<div class="update-note-item">${escapeHtml(t)}</div>`).join("");
-  modal("本次更新", `<div class="update-notes">${list}</div><button class="pill-btn" onclick="closeModal()" style="margin-top:14px;">知道了</button>`);
+  maybeShowUpdateLog();
 }
 
 async function saveAll() {
@@ -284,18 +287,14 @@ function syncUI() {
   });
   const _ttsUrl = document.getElementById("cfg_ttsUrl"); if(_ttsUrl) _ttsUrl.value = cfg.ttsUrl || "";
   const _ttsKey = document.getElementById("cfg_ttsKey"); if(_ttsKey) _ttsKey.value = cfg.ttsKey || "";
-  const _ttsGroupId = document.getElementById("cfg_ttsGroupId"); if(_ttsGroupId) _ttsGroupId.value = cfg.ttsGroupId || "";
   const _ttsModel = document.getElementById("cfg_ttsModel"); if(_ttsModel) _ttsModel.value = cfg.ttsModel || "";
   const _ttsVoice = document.getElementById("cfg_ttsVoice"); if(_ttsVoice) _ttsVoice.value = cfg.ttsVoice || "";
   const _ttsSpeed = document.getElementById("cfg_ttsSpeed"); if(_ttsSpeed) _ttsSpeed.value = cfg.ttsSpeed || 1.0;
   const _ttsVol = document.getElementById("cfg_ttsVol"); if(_ttsVol) _ttsVol.value = cfg.ttsVol || 1.0;
-  const _ttsPrompt = document.getElementById("cfg_ttsPrompt"); if(_ttsPrompt) _ttsPrompt.value = cfg.ttsPrompt || "";
   setSw("sw_ttsPersist", cfg.ttsPersist);
   setSw("sw_autoTTS", cfg.autoTTS);
   setSw("sw_autoTTS_adv", cfg.autoTTS);
-  const wTitle=document.getElementById("wTitle");
   const wText=document.getElementById("wText");
-  if(wTitle) wTitle.innerText=cfg.welcomeTitle||"";
   if(wText)  wText.innerText=cfg.welcomeText||"";
   setSw("sw_ignoreOn",    cfg.ignoreOn);
 setSw("sw_quoteOn",     cfg.quoteOn);
@@ -347,16 +346,12 @@ document.querySelectorAll(".stheme-opt[data-theme]").forEach(el =>
   if (dMaxEl) dMaxEl.value = cfg.delayMax;
   if (aMinEl) aMinEl.value = cfg.activeMin;
   if (aMaxEl) aMaxEl.value = cfg.activeMax;
-  const oppNameEl = document.getElementById("oppNameInput");
-  if(oppNameEl && document.activeElement!==oppNameEl) oppNameEl.value = texts.opp_name || "";
   const muEl = document.getElementById("cfg_musicUrl");
   if(muEl) muEl.value = cfg.musicUrl || "";
   // sync active sound display
   if(document.getElementById("modalSndList")) renderModalSoundList();
   applyTheme(); applyFontSize(); applyCustomFont();
-  applyCustomBubble(); applyChatBg();applyCustomHomeStyles();applyHomeBg(); applyCustomChatCss(); applyAesBodyBg(); applyAccentColor();
-  const accentEl = document.getElementById("cfg_accentColor");
-  if(accentEl) accentEl.value = cfg.accentColor || (document.documentElement.getAttribute("data-theme")==="dark" ? "#d97a8c" : "#b04c60");
+  applyCustomBubble(); applyChatBg();applyCustomHomeStyles();applyHomeBg(); applyCustomChatCss(); applyAesBodyBg();
   const mmKeyEl = document.getElementById("cfg_minimaxKey");
   if(mmKeyEl) mmKeyEl.value = cfg.minimaxKey || "";
   const mmVoiceEl = document.getElementById("cfg_minimaxVoice");
@@ -369,39 +364,36 @@ function setSw(id,v){ const el=document.getElementById(id); if(!el)return; v?el.
 function applyTheme(){
   const isDark=cfg.theme==="dark"||(cfg.theme==="system"&&matchMedia("(prefers-color-scheme:dark)").matches);
   document.documentElement.setAttribute("data-theme",isDark?"dark":"light");
+  const custom = isDark ? cfg.bgDark : cfg.bgLight;
+  if(custom) document.documentElement.style.setProperty("--bg", custom);
+  else document.documentElement.style.removeProperty("--bg");
+  document.querySelectorAll(".stheme-opt[data-theme]").forEach(el=>
+    el.classList.toggle("active", el.dataset.theme===cfg.theme));
+  const lightOrb=document.querySelector(".stheme-opt.light .stheme-orb");
+  const darkOrb=document.querySelector(".stheme-opt.dark .stheme-orb");
+  if(lightOrb) lightOrb.style.background = cfg.bgLight || "";
+  if(darkOrb) darkOrb.style.background = cfg.bgDark || "";
 }
-function hexToRgba(hex,alpha){
-  let h=(hex||"").replace("#","");
-  if(h.length===3) h=h.split("").map(c=>c+c).join("");
-  if(h.length!==6) return `rgba(176,76,96,${alpha})`;
-  const r=parseInt(h.substring(0,2),16), g=parseInt(h.substring(2,4),16), b=parseInt(h.substring(4,6),16);
-  return `rgba(${r},${g},${b},${alpha})`;
-}
-function applyAccentColor(){
-  const root=document.documentElement;
-  if(cfg.accentColor){
-    root.style.setProperty("--accent",cfg.accentColor);
-    root.style.setProperty("--accent-soft",hexToRgba(cfg.accentColor,.14));
-  } else {
-    root.style.removeProperty("--accent");
-    root.style.removeProperty("--accent-soft");
-  }
-}
+window.pickThemeBg = (which)=>{
+  const input=document.getElementById("themeBgPicker"); if(!input) return;
+  input.value = (which==="light" ? cfg.bgLight : cfg.bgDark) || (which==="light" ? "#f5f6f8" : "#0b0f17");
+  input.oninput = async ()=>{
+    if(which==="light") cfg.bgLight=input.value; else cfg.bgDark=input.value;
+    await saveAll(); applyTheme();
+  };
+  input.click();
+};
 function applyFontSize(){
   document.documentElement.style.setProperty("--fs",cfg.fontSize+"px");
   document.documentElement.style.setProperty("--chat-fs",cfg.chatFontSize+"px");
 }
 function applyCustomFont(){
   const el=document.getElementById("user-font");
-  // 两个入口分开处理，互不干扰：直链自动包成 @import；
-  // "其他方式"是用户自己给的完整 CSS（@font-face 等），原样注入。
-  // 两者都填了就都生效——直链负责拉取字体文件，自定义CSS负责声明规则。
   let css="";
-  if(cfg.customFontUrl && cfg.customFontUrl.trim()){
-    css += `@import url("${cfg.customFontUrl.trim()}");`;
-  }
-  if(cfg.customFontCss && cfg.customFontCss.trim()){
-    css += cfg.customFontCss.trim();
+  if(cfg.customFontCss){
+    css=(cfg.customFontCss.trim().startsWith("@")||cfg.customFontCss.trim().startsWith("/*"))
+      ? cfg.customFontCss
+      : `@import url("${cfg.customFontCss}");`;
   }
   el.innerHTML=css;
   const fontVar=cfg.customFont ? `${cfg.customFont},"Songti SC","SimSun",serif` : `"Songti SC","SimSun","STSong",serif`;
@@ -466,8 +458,6 @@ window.cfgSet    = async(k,v)=>{ cfg[k]=v; await saveAll(); syncUI(); };
 window.cfgToggle = async(k)=>{ cfg[k]=!cfg[k]; await saveAll(); syncUI(); if(k==="activeSend") scheduleActive(); if(document.getElementById("chatFlow")) renderChats(); };
 window.setLayout = async(v)=>{ cfg.layout=+v; await saveAll(); syncUI(); document.querySelectorAll(".tab-switch .ts-opt[data-v]").forEach(el=>el.classList.toggle("active",+el.dataset.v===cfg.layout)); };
 window.setTheme  = async(v)=>{ cfg.theme=v; await saveAll(); syncUI(); document.querySelectorAll(".tab-switch .ts-opt[data-theme]").forEach(el=>el.classList.toggle("active",el.dataset.theme===cfg.theme)); };
-window.setAccentColor = async(v)=>{ cfg.accentColor=v; await saveAll(); applyAccentColor(); };
-window.resetAccentColor = async()=>{ cfg.accentColor=""; await saveAll(); syncUI(); toast("已恢复默认颜色"); };
 window.setUiFontSize  = async(v)=>{ cfg.fontSize=+v; await saveAll(); syncUI(); };
 window.setChatFontSize= async(v)=>{ cfg.chatFontSize=+v; await saveAll(); syncUI(); };
 window.setChatStyle = async v => {
@@ -487,19 +477,6 @@ window.toggleNotif    = async()=>{
 window.resetBg = async()=>{ delete imgs.chatBg; await saveAll(); syncUI(); };
 
 // ─── Editables ───
-// 设置页折叠面板：每个 sblock 标题可点击展开/收起，默认每个Tab只留第一块打开
-function bindSettingsAccordion(){
-  document.querySelectorAll('#settingsApp .sblock-label').forEach(label=>{
-    if(!label.querySelector('.sblock-chevron')){
-      const chev=document.createElement('span');
-      chev.className='sblock-chevron';
-      chev.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
-      label.appendChild(chev);
-    }
-    label.addEventListener('click', ()=>{ label.closest('.sblock')?.classList.toggle('collapsed'); });
-  });
-}
-
 function bindEditables(){
   document.body.addEventListener("click", e=>{
     // aes-dots: open body bg upload
@@ -521,9 +498,6 @@ function bindEditables(){
   });
 }
 window.saveText = async(k,isCfg)=>{ const v=document.getElementById("m_text").value; if(isCfg) cfg[k]=v; else texts[k]=v; await saveAll(); syncUI(); closeModal(); };
-
-// 设置里直接改"对方昵称"，无需进入文案编辑页逐条翻找
-window.setOppName = async(v)=>{ texts.opp_name = (v||"").trim(); await saveAll(); syncUI(); };
 
 // ─── Image interactions ───
 function bindImageInteractions(){
@@ -598,37 +572,43 @@ function onPickSnd(e){
 }
 
 // ─── Sound ───
-function makeDullThud1() {
+// 消息提示音：清脆的双音效，音量拉满（增益 1.0，仅用极短包络避免削波失真）
+function makeMsgSound1() {
   try {
     const c = new (window.AudioContext || window.webkitAudioContext)();
-    const o = c.createOscillator(), g = c.createGain();
-    o.connect(g); g.connect(c.destination);
-    o.type = "sine"; o.frequency.setValueAtTime(120, c.currentTime);
-    o.frequency.exponentialRampToValueAtTime(60, c.currentTime + 0.12);
-    g.gain.setValueAtTime(0.18, c.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.28);
-    o.start(); o.stop(c.currentTime + 0.28);
+    const now = c.currentTime;
+    [880, 1318.5].forEach((freq, i) => {
+      const o = c.createOscillator(), g = c.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(freq, now);
+      o.connect(g); g.connect(c.destination);
+      const t0 = now + i * 0.07;
+      g.gain.setValueAtTime(0, t0);
+      g.gain.linearRampToValueAtTime(1.0, t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.32);
+      o.start(t0); o.stop(t0 + 0.34);
+    });
   } catch {}
 }
-function makeDullThud2() {
+function makeMsgSound2() {
   try {
     const c = new (window.AudioContext || window.webkitAudioContext)();
-    const buf = c.createBuffer(1, c.sampleRate * 0.18, c.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) {
-      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 4) * 0.22;
-    }
-    const src = c.createBufferSource(), g = c.createGain();
-    const flt = c.createBiquadFilter(); flt.type = "lowpass"; flt.frequency.value = 200;
-    src.buffer = buf; src.connect(flt); flt.connect(g); g.connect(c.destination);
-    g.gain.setValueAtTime(1, c.currentTime);
-    src.start();
+    const now = c.currentTime;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(660, now);
+    o.frequency.exponentialRampToValueAtTime(990, now + 0.09);
+    o.connect(g); g.connect(c.destination);
+    g.gain.setValueAtTime(0, now);
+    g.gain.linearRampToValueAtTime(1.0, now + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    o.start(now); o.stop(now + 0.24);
   } catch {}
 }
 
 const BUILTIN_SOUNDS = [
-  { id: "__builtin_thud1__", name: "闷响·低", builtin: true },
-  { id: "__builtin_thud2__", name: "闷响·噪", builtin: true }
+  { id: "__builtin_thud1__", name: "清脆·叮", builtin: true },
+  { id: "__builtin_thud2__", name: "轻快·嘀", builtin: true }
 ];
 
 function renderSoundList(){
@@ -658,8 +638,8 @@ function renderSoundList(){
     const ops = document.createElement("div"); ops.className="ops";
     const playBtn = document.createElement("span"); playBtn.innerText="试听";
     playBtn.onclick = () => {
-      if(s.id==="__builtin_thud1__") makeDullThud1();
-      else if(s.id==="__builtin_thud2__") makeDullThud2();
+      if(s.id==="__builtin_thud1__") makeMsgSound1();
+      else if(s.id==="__builtin_thud2__") makeMsgSound2();
       else new Audio(s.data).play().catch(()=>{});
     };
     ops.appendChild(playBtn);
@@ -673,13 +653,13 @@ function renderSoundList(){
   });
 }
 function playSoundById(id) {
-  if (id === "__builtin_thud1__") { makeDullThud1(); return; }
-  if (id === "__builtin_thud2__") { makeDullThud2(); return; }
+  if (id === "__builtin_thud1__") { makeMsgSound1(); return; }
+  if (id === "__builtin_thud2__") { makeMsgSound2(); return; }
   const s = sounds.find(x => x.id === id);
-  if (s) new Audio(s.data).play().catch(() => {});
-  else makeDullThud1();
+  if (s) { const a = new Audio(s.data); a.volume = 1.0; a.play().catch(() => {}); }
+  else makeMsgSound1();
 }
-window.playSnd = i=>{ if(sounds[i]) new Audio(sounds[i].data).play().catch(()=>{}); };
+window.playSnd = i=>{ if(sounds[i]){ const a=new Audio(sounds[i].data); a.volume=1.0; a.play().catch(()=>{}); } };
 window.delSnd  = async i=>{ sounds.splice(i,1); await saveAll(); renderSoundList(); };
 function chime(){ playSoundById(cfg.activeSoundId || "__builtin_thud1__"); }
 window.testSound = ()=>{ playSoundById(cfg.activeSoundId || "__builtin_thud1__"); };
@@ -917,6 +897,7 @@ function appendNewChats(){
   const frag=document.createDocumentFragment();
   const lastDateRef={v:renderedLastDate};
   for(let idx=renderedMsgCount; idx<chats.length; idx++) buildMsgInto(frag,chats[idx],idx,ctx,lastDateRef);
+  Array.from(frag.children).forEach(el=>el.classList.add("msg-enter"));
   f.appendChild(frag);
   renderedMsgCount=chats.length; renderedLastDate=lastDateRef.v;
   if(wasNear) f.scrollTop=f.scrollHeight;
@@ -1028,8 +1009,24 @@ document.addEventListener("click",      () => { try { getAudioCtx().resume(); } 
 const _ttsMem = new Map(); // 内存缓存 ArrayBuffer
 const _TTS_LS_PREFIX = "ttsCache_";
 
-function _ttsCacheKey(text, voiceId, speed, prompt) {
-  return `${voiceId}|${speed}|${(prompt||"").slice(0,40)}|${text}`;
+function _ttsCacheKey(text, voiceId, speed) {
+  return `${voiceId}|${speed}|${text}`;
+}
+// Base64 编码存储，比 JSON.stringify(Array) 体积小得多（约省 2/3 空间），
+// 大幅降低触发 localStorage 配额上限的概率——这正是"持久缓存开了却不生效"的根因：
+// 之前每段语音都以巨大的数字数组 JSON 字符串写入，很快超出配额，写入静默失败。
+function _bufToBase64(buffer) {
+  let binary = "";
+  const bytes = new Uint8Array(buffer);
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  return btoa(binary);
+}
+function _base64ToBuf(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
 }
 function _ttsGet(key) {
   if (_ttsMem.has(key)) return _ttsMem.get(key);
@@ -1037,8 +1034,7 @@ function _ttsGet(key) {
     try {
       const raw = localStorage.getItem(_TTS_LS_PREFIX + key);
       if (raw) {
-        const arr = JSON.parse(raw);
-        const buf = new Uint8Array(arr).buffer;
+        const buf = _base64ToBuf(raw);
         _ttsMem.set(key, buf);
         return buf;
       }
@@ -1050,9 +1046,8 @@ function _ttsSet(key, buffer) {
   _ttsMem.set(key, buffer);
   if (cfg.ttsPersist) {
     try {
-      const arr = Array.from(new Uint8Array(buffer));
-      localStorage.setItem(_TTS_LS_PREFIX + key, JSON.stringify(arr));
-    } catch(e) { /* 超出 quota 静默失败 */ }
+      localStorage.setItem(_TTS_LS_PREFIX + key, _bufToBase64(buffer));
+    } catch(e) { toast("语音缓存空间不足，本条未能持久化", "warn"); }
   }
 }
 
@@ -1089,28 +1084,10 @@ window.playMiniMaxTTS = async (text) => {
   const voiceId = (cfg.ttsVoice  || "male-qn-qingse").trim();
   const speed   = parseFloat(cfg.ttsSpeed) || 1.0;
   const vol     = parseFloat(cfg.ttsVol)   || 1.0;
-  const prompt  = (cfg.ttsPrompt || "").trim();
   const cleanText = text.replace(/<[^>]*>?/gm, "").trim();
   if (!cleanText) return;
 
-  // 提示词映射到 emotion 枚举（MiniMax 支持的值）
-  const EMOTION_MAP = {
-    "开心":  "happy",   "高兴":  "happy",   "愉快": "happy",
-    "悲伤":  "sad",     "难过":  "sad",
-    "愤怒":  "angry",   "生气":  "angry",
-    "恐惧":  "fearful", "害怕":  "fearful",
-    "厌恶":  "disgusted",
-    "惊讶":  "surprised",
-    "平静":  "neutral", "温柔":  "neutral", "轻声细语": "neutral",
-  };
-  let emotion = undefined;
-  for (const [kw, val] of Object.entries(EMOTION_MAP)) {
-    if (prompt.includes(kw)) { emotion = val; break; }
-  }
-
-  const apiText = cleanText; // 文本里不加任何提示词
-
-  const cacheKey = _ttsCacheKey(cleanText, voiceId, speed, prompt);
+  const cacheKey = _ttsCacheKey(cleanText, voiceId, speed);
   const cached = _ttsGet(cacheKey);
   if (cached) {
     await _playBuffer(cached);
@@ -1118,10 +1095,7 @@ window.playMiniMaxTTS = async (text) => {
     return;
   }
 
-  let url = (cfg.ttsUrl || "https://api.minimax.chat/v1/t2a_v2").trim();
-  const groupId = cfg.ttsGroupId?.trim();
-  if (groupId && !url.includes("GroupId"))
-    url += (url.includes("?") ? "&" : "?") + "GroupId=" + groupId;
+  const url = (cfg.ttsUrl || "https://api.minimax.chat/v1/t2a_v2").trim();
 
   try {
     toast("正在合成语音…");
@@ -1129,8 +1103,8 @@ window.playMiniMaxTTS = async (text) => {
       method: "POST",
       headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model, text: apiText, stream: false,
-        voice_setting: { voice_id: voiceId, speed, vol, pitch: 0, ...(emotion ? { emotion } : {}) },
+        model, text: cleanText, stream: false,
+        voice_setting: { voice_id: voiceId, speed, vol, pitch: 0 },
         audio_setting: { sample_rate: 32000, bitrate: 128000, format: "mp3", channel: 1 }
       })
     });
@@ -1240,26 +1214,6 @@ function showHomeTypingBar(on){
   if(txt) txt.textContent=cfg.typingText||"正在输入";
   bar.classList.toggle("active",on);
 }
-// 连续发送（连句关闭时）在聊天页内也显示"正在输入"，让等待间隙有动画衔接，
-// 而不是干等几秒后突然冒出下一条消息
-function showChatTypingRow(on){
-  const f=document.getElementById("chatFlow"); if(!f) return;
-  let node=document.getElementById("chatTypingRow");
-  if(on){
-    if(node) return;
-    const av=imgs.oppAvatar||window.DEFAULTS.PH_SVG;
-    node=document.createElement("div");
-    node.id="chatTypingRow";
-    node.className="row opp";
-    node.innerHTML=`${cfg.showAvatar?`<div class="av-col"><img class="av" src="${av}"></div>`:""}
-      <div class="typing-pure"><span class="t-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="tip-text">${escapeHtml(cfg.typingText||"正在输入")}</span></div>`;
-    const wasNear=f.scrollHeight-f.scrollTop-f.clientHeight<120;
-    f.appendChild(node);
-    if(wasNear) f.scrollTop=f.scrollHeight;
-  } else {
-    node?.remove();
-  }
-}
 function scheduleReply(){
   if(replyTimer||typingNode) return;
   if(cfg.ignoreOn && Math.random() < 0.1) {
@@ -1327,14 +1281,12 @@ async function fireReply(){
       else if(cfg.popupOn) showPopup(firstText, name2, avatar2);
       notify(firstText, name2, avatar2);
 
-      // 剩余句子依次延迟发送——间隔缩短，且在等待期间显示"正在输入"，
-      // 让几条消息看起来是同一次连续输入，而不是各自独立、间隔很长
+      // 剩余句子依次延迟发送
       for(let fi = 1; fi < arr.length; fi++){
-        const inChat = currentApp==="chatApp";
-        const waitMs = randInt(600, 1400); // 0.6s–1.4s，随字数略有起伏但不再拖沓
-        if(inChat) showChatTypingRow(true); else showHomeTypingBar(true);
+        const waitMs = randInt(500, 1100);
+        showHomeTypingBar(true);
         await new Promise(res => setTimeout(res, waitMs));
-        if(inChat) showChatTypingRow(false); else showHomeTypingBar(false);
+        showHomeTypingBar(false);
 
         const nextTime = new Date();
         const nextText = arr[fi];
@@ -1599,23 +1551,27 @@ window.headerAdd = ()=>{ if(cardsActiveTab==="stickers") window.openAddSticker()
 
 // ─── 表情包库 ───
 window.renderStickers = () => {
+  invalidateStickerPicker();
   const grid=document.getElementById("stickerGrid"); if(!grid) return;
   grid.innerHTML="";
   if(!stickers.length){ grid.innerHTML=`<div class="empty-tip" style="grid-column:1/-1;padding:40px;text-align:center;">表情包库此时空空如也</div>`; updateStickerBatch(); return; }
+  const frag=document.createDocumentFragment();
   stickers.forEach(s=>{
     const it=document.createElement("div");
     it.className="sticker-item"+(s.shielded?" shielded":"");
     const chkHtml=isStickerBatchSelecting?`<input type="checkbox" class="chk" ${stickerSelected.includes(s.id)?"checked":""} onchange="event.stopPropagation();stickerSelToggle('${s.id}',this.checked)">`:"";
     it.innerHTML=`
-      <img src="${s.src}" loading="lazy">
+      <img loading="lazy" decoding="async">
       <span class="sti-op sti-shield" onclick="event.stopPropagation();toggleStickerShield('${s.id}')" title="${s.shielded?"恢复":"屏蔽"}">${s.shielded?STICKER_EYE_OFF_SVG:STICKER_EYE_SVG}</span>
       <span class="sti-op sti-del" onclick="event.stopPropagation();delSticker('${s.id}')" title="删除">${STICKER_X_SVG}</span>
       ${chkHtml}`;
+    it.querySelector("img").src=s.src;
     if(isStickerBatchSelecting){
       it.addEventListener("click", e=>{ if(e.target.closest(".chk")||e.target.closest(".sti-op")) return; const cb=it.querySelector(".chk"); if(!cb) return; cb.checked=!cb.checked; stickerSelToggle(s.id, cb.checked); });
     }
-    grid.appendChild(it);
+    frag.appendChild(it);
   });
+  grid.appendChild(frag);
   updateStickerBatch();
 };
 const STICKER_EYE_SVG=`<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
@@ -1698,6 +1654,11 @@ function onPickSticker(e){
 function resolveStickerSrc(id){ const s=stickers.find(x=>x.id===id); return s?s.src:window.DEFAULTS.PH_SVG; }
 
 // ─── 聊天内快捷发送表情包 ───
+// 面板每次打开都用 innerHTML 整体重建，逐张图片(base64)重新解析/解码，
+// 数量一多就是主线程长任务 → 卡顿+动画期间布局抖动("挤压"的观感来源)。
+// 现在改为一次建好 DOM 并缓存，之后只在表情包数据真的变化时才重建。
+let _spGridDirty = true;
+function invalidateStickerPicker(){ _spGridDirty = true; }
 window.toggleStickerPicker = () => {
   const p=document.getElementById("stickerPicker"); if(!p) return;
   const opening=!p.classList.contains("on");
@@ -1709,14 +1670,25 @@ window.gotoStickerLibrary = () => {
   closeApp("chatApp");
   openApp("cardsApp"); switchCardsTab("stickers");
 };
-let _spGridSig=""; // 表情包快捷面板的渲染签名：签名不变就不重建DOM，避免每次打开都整表重排卡顿
-function renderStickerPickerGrid(force){
+function renderStickerPickerGrid(){
   const g=document.getElementById("spGrid"); if(!g) return;
-  if(!stickers.length){ g.innerHTML=`<div class="sp-empty">还没有表情包<span onclick="gotoStickerLibrary()">去添加</span></div>`; _spGridSig=""; return; }
-  const sig=stickers.map(s=>s.id).join(",");
-  if(!force && sig===_spGridSig) return;
-  _spGridSig=sig;
-  g.innerHTML=stickers.map(s=>`<div class="sp-item" onclick="sendSticker('${s.id}')"><img src="${s.src}" loading="lazy" decoding="async"></div>`).join("");
+  if(!stickers.length){ g.innerHTML=`<div class="sp-empty">还没有表情包<span onclick="gotoStickerLibrary()">去添加</span></div>`; _spGridDirty=true; return; }
+  if(!_spGridDirty) return;
+  const frag=document.createDocumentFragment();
+  stickers.forEach(s=>{
+    const it=document.createElement("div");
+    it.className="sp-item";
+    it.addEventListener("click",()=>window.sendSticker(s.id));
+    const img=document.createElement("img");
+    img.decoding="async";
+    img.loading="lazy";
+    img.src=s.src;
+    it.appendChild(img);
+    frag.appendChild(it);
+  });
+  g.innerHTML="";
+  g.appendChild(frag);
+  _spGridDirty=false;
 }
 window.sendSticker = async id => {
   const s=stickers.find(x=>x.id===id); if(!s) return;
@@ -1765,7 +1737,7 @@ function renderTextsApp(){
 
 window.exportTexts = ()=>{
   const data={cfg_texts:{},texts};
-  ["welcomeTitle","welcomeText","inputPlaceholder","typingText","readText"].forEach(k=>{data.cfg_texts[k]=cfg[k]||"";});
+  ["welcomeText","inputPlaceholder","typingText","readText"].forEach(k=>{data.cfg_texts[k]=cfg[k]||"";});
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})); a.download=`文案_${Date.now()}.json`; a.click(); toast("文案已导出");
 };
 
@@ -2324,21 +2296,13 @@ window.openFontModal = () => {
   modal("字体", `
     <div class="text-cell-label" style="margin-bottom:4px;font-size:11px;color:var(--text-mute)">字体族名</div>
     <input class="fld" id="m_fontName" value="${escapeHtml(cfg.customFont)}" placeholder="留空使用宋体">
-
-    <div class="text-cell-label" style="margin:14px 0 4px;font-size:11px;color:var(--text-mute)">入口一 · 直链输入</div>
-    <input class="fld" id="m_fontUrl" value="${escapeHtml(cfg.customFontUrl)}" placeholder="字体CSS/字体文件直链，如 https://fonts.googleapis.com/css2?family=...">
-    <div class="text-cell-hint" style="font-size:10px;color:var(--text-mute);opacity:.7;margin-top:3px;">粘贴一个链接即可，会自动包成 @import 引入</div>
-
-    <div class="text-cell-label" style="margin:14px 0 4px;font-size:11px;color:var(--text-mute)">入口二 · 其他方式（自定义CSS）</div>
-    <textarea class="fld area" id="m_fontCss" style="min-height:60px;" placeholder="粘贴完整的 @font-face 规则等CSS">${escapeHtml(cfg.customFontCss)}</textarea>
-    <div class="text-cell-hint" style="font-size:10px;color:var(--text-mute);opacity:.7;margin-top:3px;">两个入口可以只填一个，也可以都填——直链负责拉字体文件，这里负责额外的CSS规则</div>
-
-    <button class="pill-btn" onclick="saveFont()" style="margin-top:14px;">保存</button>
+    <div class="text-cell-label" style="margin:10px 0 4px;font-size:11px;color:var(--text-mute)">CSS / URL</div>
+    <textarea class="fld area" id="m_fontCss" style="min-height:60px;">${escapeHtml(cfg.customFontCss)}</textarea>
+    <button class="pill-btn" onclick="saveFont()">保存</button>
   `);
 };
 window.saveFont = async () => {
   cfg.customFont    = document.getElementById("m_fontName").value.trim();
-  cfg.customFontUrl = document.getElementById("m_fontUrl").value.trim();
   cfg.customFontCss = document.getElementById("m_fontCss").value.trim();
   await saveAll(); applyCustomFont(); closeModal(); toast("已更新");
 };

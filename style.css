@@ -308,9 +308,6 @@
 }
 [data-theme="light"] .w-text { color: rgba(28,22,14,.3); }
 
-/* kept for syncUI compat */
-.w-title { display: none; }
-
 /* ── 红色缠绕曲线 ── */
 .w-red-curves {
   position: relative;
@@ -1561,6 +1558,8 @@
   .fld { width:100%; border:1px solid var(--border); border-radius:10px; padding:10px 12px; background:var(--bg); font-size:calc(var(--fs)*.92); outline:none; color:var(--text); }
   .fld.area { min-height:80px; resize:vertical; line-height:1.5; }
   .fld-tip { font-size:calc(var(--fs)*.75); color:var(--text-mute); line-height:1.6; }
+  .update-log-list { margin: 0 0 14px; padding-left: 18px; }
+  .update-log-list li { font-size: calc(var(--fs)*.86); line-height: 2; color: var(--text); }
   .cat-dd { position:relative; }
   .cat-dd-btn { display:flex; justify-content:space-between; align-items:center; text-align:left; cursor:pointer; }
   .cat-dd-arrow { font-size:18px; color:var(--text-mute); line-height:1; transform:rotate(90deg); display:inline-block; transition:transform .15s; }
@@ -2845,8 +2844,6 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
 }
 .sblock-label::before {
   content: "";
@@ -2857,35 +2854,6 @@
   border-radius: 1px;
   opacity: .35;
   flex-shrink: 0;
-}
-/* 折叠/展开：设置项太多容易漏看，默认每个Tab只展开第一块，其余收起，
-   点击标题行即可展开——整体列表变得一目了然，不用逐条翻找 */
-.sblock-chevron {
-  margin-left: auto;
-  width: 14px; height: 14px;
-  flex-shrink: 0;
-  color: var(--text-mute);
-  opacity: .6;
-  transition: transform .3s var(--ease);
-}
-.sblock.collapsed .sblock-chevron { transform: rotate(-90deg); }
-.sblock-body {
-  overflow: hidden;
-  max-height: 2400px;
-  opacity: 1;
-  transition: max-height .32s var(--ease), opacity .2s var(--ease);
-}
-.sblock.collapsed .sblock-body {
-  max-height: 0;
-  opacity: 0;
-  pointer-events: none;
-}
-.stoggle-mini-label {
-  font-size: calc(var(--fs)*.62);
-  color: var(--text-mute);
-  opacity: .55;
-  letter-spacing: 1.5px;
-  padding: 10px 14px 2px;
 }
 
 /* ─── Avatar row ─── */
@@ -2919,6 +2887,13 @@
   width: 100%; height: 100%;
   object-fit: cover;
   display: block;
+}
+.sav-oppname {
+  text-align: center;
+  font-size: calc(var(--fs) * .82);
+  color: var(--text);
+  padding: 0 14px 14px;
+  cursor: pointer;
 }
 
 /* ─── Layout switcher ─── */
@@ -3105,38 +3080,6 @@
 .sinput-stack { padding-top: 4px; }
 .sinput-stack .sinput-row:first-child { border-top: 1px solid var(--border); }
 
-/* ─── 主题色选择 ─── */
-.saccent-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px 14px;
-  gap: 10px;
-  border-top: 1px solid var(--border);
-  margin-top: 10px;
-}
-.saccent-controls { display: flex; align-items: center; gap: 12px; }
-.saccent-picker {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 34px; height: 34px;
-  border-radius: 50%;
-  border: 2px solid var(--border);
-  padding: 0;
-  cursor: pointer;
-  background: none;
-  overflow: hidden;
-}
-.saccent-picker::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
-.saccent-picker::-webkit-color-swatch { border: none; border-radius: 50%; }
-.saccent-reset {
-  font-size: calc(var(--fs)*.76);
-  color: var(--accent);
-  letter-spacing: 1px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
 /* ─── TTS test ─── */
 .stts-test {
   display: flex;
@@ -3308,6 +3251,14 @@
 .msg-flash {
   border-radius: 12px;
   animation: msgFlash .9s var(--ease) both;
+}
+
+@keyframes msgEnter {
+  0%   { opacity: 0; transform: translateY(8px) scale(.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.msg-enter {
+  animation: msgEnter .32s cubic-bezier(.22,1,.36,1) both;
 }
 
 /* ════════════════════════════════════════════
@@ -3544,10 +3495,13 @@
   flex: 1;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: min-content;
   gap: 12px;
   padding: 10px;
   align-content: start;
   overflow-y: auto;
+  min-height: 0;
+  contain: content;
 }
 .sticker-item {
   position: relative;
@@ -3710,16 +3664,14 @@
 .sp-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: min-content;
+  align-content: start;
   gap: 10px;
   padding: 4px 8px 12px;
   overflow-y: auto;
-  /* 关键修复：.sticker-picker 是 flex column 且带 max-height+overflow:hidden，
-     这个网格必须能收缩并自己滚动，否则表情包一多，多出来的行会被外层
-     直接裁掉而不是可滚动——表现为"挤压/看不全" */
-  flex: 1 1 auto;
+  flex: 1;
   min-height: 0;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  contain: content;
 }
 .sp-item {
   aspect-ratio: 1 / 1;
@@ -3729,9 +3681,6 @@
   background: var(--bg-soft);
   -webkit-tap-highlight-color: transparent;
   transition: transform .15s var(--ease), background .15s;
-  /* 数量一多，离屏的格子不参与渲染/布局计算，滚动更顺滑 */
-  content-visibility: auto;
-  contain-intrinsic-size: 80px 80px;
 }
 .sp-item:active { transform: scale(.88); background: var(--accent-soft); }
 .sp-item img {
@@ -3748,29 +3697,6 @@
   font-size: calc(var(--fs)*.82);
   letter-spacing: 1px;
 }
-/* ── 更新说明弹窗 ── */
-.update-notes {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 2px 0 4px;
-}
-.update-note-item {
-  position: relative;
-  padding-left: 16px;
-  font-size: calc(var(--fs)*.9);
-  line-height: 1.5;
-  color: var(--text);
-}
-.update-note-item::before {
-  content: "";
-  position: absolute;
-  left: 2px; top: .6em;
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
 .sp-empty span {
   color: var(--accent);
   cursor: pointer;
