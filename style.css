@@ -882,7 +882,11 @@
   .h4-rule  { height:1px; background:repeating-linear-gradient(90deg,var(--line) 0 4px,transparent 4px 8px); opacity:.6; }
   
   /* Bubbles */
-  .row { display:flex; align-items:stretch; gap:8px; animation:rowIn .45s var(--ease) both; padding-top:2px; }
+  /* 入场动画只挂在 .msg-enter（真正新增的消息）上，不再挂在 .row 本身——
+     以前每条历史消息在整页重建时都会重放这段动画，消息一多，同时触发几十次
+     opacity/transform 动画就是"消息弹入卡得要死"的根源。 */
+  .row { display:flex; align-items:stretch; gap:8px; padding-top:2px; }
+  .row.msg-enter { animation:rowIn .45s var(--ease) both; }
   .row.self { flex-direction:row-reverse; }
   @keyframes rowIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
   .av-col { display:flex; flex-direction:column; align-items:center; gap:5px; flex-shrink:0; width:40px; justify-content:flex-end; padding-bottom:2px; }
@@ -2994,6 +2998,9 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .stheme-opt span {
   font-size: calc(var(--fs) * .72);
@@ -3007,6 +3014,9 @@
   border: 1.5px solid var(--border);
   transition: border-color .2s, box-shadow .2s;
   box-shadow: inset 0 1px 3px rgba(0,0,0,.07);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .stheme-opt.active .stheme-orb {
   border-color: var(--text);
@@ -3780,4 +3790,49 @@
   width: 22px; height: 2px;
   border-radius: 2px;
   background: var(--accent);
+}
+
+/* ─── 自定义样式面板美化（原先输入框/文本域样式过于简陋）─── */
+#cssHubApp .cfg-group-body {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+#cssHubApp .fld,
+#cssHubApp .fld.area {
+  background: var(--bg-soft);
+  border-radius: 12px;
+  transition: border-color .15s var(--ease), box-shadow .15s var(--ease), background .15s var(--ease);
+}
+#cssHubApp .fld:focus,
+#cssHubApp .fld.area:focus {
+  border-color: var(--accent);
+  background: var(--bg);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+#cssHubApp .fld.area {
+  line-height: 1.65;
+}
+#cssHubApp .fld.area::placeholder,
+#cssHubApp .fld::placeholder {
+  color: var(--text-mute);
+  opacity: .55;
+}
+#cssHubApp .cfg-group-label {
+  padding-left: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#cssHubApp .sbtn.ghost {
+  align-self: flex-start;
+  border-radius: 10px;
+  padding: 7px 14px;
+  font-size: calc(var(--fs) * .78);
+  border-color: var(--border);
+  color: var(--text-mute);
+  transition: border-color .15s var(--ease), color .15s var(--ease);
+}
+#cssHubApp .sbtn.ghost:active {
+  border-color: var(--accent);
+  color: var(--accent);
 }

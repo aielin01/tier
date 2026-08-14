@@ -542,6 +542,7 @@
         <div class="deck" id="cardDeck"></div>
         <div class="batch-bar" id="batchBar">
           <span class="cnt" id="batchCnt"></span>
+          <button class="bbtn" onclick="toggleSelectAllCards()">全选</button>
           <button class="bbtn" onclick="batchMove()">移</button>
           <button class="bbtn" onclick="batchShield(true)">屏</button>
           <button class="bbtn" onclick="batchShield(false)">恢</button>
@@ -552,6 +553,7 @@
         <div class="sticker-grid" id="stickerGrid"></div>
         <div class="batch-bar" id="stickerBatchBar">
           <span class="cnt" id="stickerBatchCnt"></span>
+          <button class="bbtn" onclick="toggleSelectAllStickers()">全选</button>
           <button class="bbtn" onclick="batchShieldStickers(true)">屏</button>
           <button class="bbtn" onclick="batchShieldStickers(false)">恢</button>
           <button class="bbtn danger" onclick="batchDeleteStickers()">删</button>
@@ -1048,9 +1050,8 @@
     <div class="cfg-group">
       <div class="cfg-group-label">字体</div>
       <div class="cfg-group-body" style="padding:12px;display:flex;flex-direction:column;gap:10px;">
-        <input class="fld" id="ch_fontName" placeholder="字体族名，如 NanoFullSong（留空使用宋体）">
-        <input class="fld" id="ch_fontUrl" placeholder="直链地址（字体文件 / CSS 直链）">
-        <textarea class="fld area" id="ch_fontRaw" style="min-height:60px;font-family:monospace;font-size:11px;" placeholder="其他方式：直接粘贴 @font-face / @import 等完整 CSS"></textarea>
+        <input class="fld" id="ch_fontUrl" placeholder="字体直链（留空使用宋体）">
+        <textarea class="fld area" id="ch_fontRaw" style="min-height:60px;font-family:monospace;font-size:11px;" placeholder="或粘贴完整 CSS"></textarea>
         <button class="sbtn ghost" onclick="resetCssField('font')">重置字体</button>
       </div>
     </div>
@@ -1066,7 +1067,7 @@
     <div class="cfg-group">
       <div class="cfg-group-label">聊天界面 CSS</div>
       <div class="cfg-group-body" style="padding:12px;display:flex;flex-direction:column;gap:8px;">
-        <textarea class="fld area" id="ch_chatCss" style="min-height:100px;font-family:monospace;font-size:11px;" placeholder="覆盖聊天页整体：顶部头像栏 .chat-head、消息区 .chat-flow、底部输入栏 .chat-input-bar 等"></textarea>
+        <textarea class="fld area" id="ch_chatCss" style="min-height:100px;font-family:monospace;font-size:11px;" placeholder="自定义聊天页 CSS"></textarea>
         <button class="sbtn ghost" onclick="resetCssField('chat')">重置聊天 CSS</button>
       </div>
     </div>
@@ -1074,8 +1075,8 @@
     <div class="cfg-group">
       <div class="cfg-group-label">主页 CSS / JS</div>
       <div class="cfg-group-body" style="padding:12px;display:flex;flex-direction:column;gap:8px;">
-        <textarea class="fld area" id="ch_homeCss" style="min-height:100px;font-family:monospace;font-size:11px;" placeholder=".l1 { gap: 6px; } .anni-wrap { display:none; }"></textarea>
-        <textarea class="fld area" id="ch_homeJs" style="min-height:100px;font-family:monospace;font-size:11px;" placeholder="// 主页渲染后执行一次&#10;// document.querySelector('.anni-counter').style.fontSize='60px'"></textarea>
+        <textarea class="fld area" id="ch_homeCss" style="min-height:100px;font-family:monospace;font-size:11px;" placeholder="自定义主页 CSS"></textarea>
+        <textarea class="fld area" id="ch_homeJs" style="min-height:100px;font-family:monospace;font-size:11px;" placeholder="自定义主页 JS（渲染后执行一次）"></textarea>
         <button class="sbtn ghost" onclick="resetCssField('home')">重置主页 CSS / JS</button>
       </div>
     </div>

@@ -94,17 +94,15 @@ const UPDATE_LOG = [
     v: 1,
     items: [
       "对方昵称支持在设置内直接点击文字改名",
-      "多条连续消息发送间隔更紧凑，衔接更流畅",
       "表情包面板改为一次构建、重复使用，解决卡顿与挤压",
-      "新增更新说明弹窗，首次进入展示一次",
       "主题设定的圆圈现可直接点击更改背景色",
-      "设置界面精简整合",
       "更换全部消息提示音，音量调整为最大",
-      "清理文案中心内已失效或从未生效的设置项",
       "头像下方的名字文字直接点击改名，不再另起一行",
       "主题新增第四个自定义圆圈：轻点切换，长按改色，其余三个圆圈逻辑不变",
-      "连续消息改为固定间隔发送，并补上气泡输入提示，衔接更顺滑",
-      "数据页新增「更新公告」入口，可随时回看"
+      "数据页新增「更新公告」入口，可随时回看",
+      "消息发送与接收改为局部保存、局部渲染，大幅减少卡顿",
+      "字卡库、表情包库支持批量全选",
+      "自定义样式面板精简文案与视觉样式"
     ]
   }
 ];
@@ -124,16 +122,7 @@ function maybeShowUpdateLog(){
 window.showUpdateLog = ()=>{
   modal("更新说明", `${_renderUpdateLogHtml()}<button class="pill-btn" onclick="closeModal()">知道了</button>`);
 };
-let _verTapCount=0, _verTapTimer=null;
-window.tapVersionTag = ()=>{
-  _verTapCount++;
-  clearTimeout(_verTapTimer);
-  _verTapTimer=setTimeout(()=>{ _verTapCount=0; }, 1500);
-  if(_verTapCount>=5){
-    _verTapCount=0;
-    modal("", `<div style="font-size:calc(var(--fs)*.88);line-height:2;color:var(--text-mute);white-space:pre-wrap;">不知道下次更新会是猴年马月了…\n希望大家用的开心，以及！\n一周后会重置密钥，请大家注意哦。</div><button class="pill-btn" onclick="closeModal()">好嘞</button>`);
-  }
-};
+window.tapVersionTag = ()=>{};
 
 const TEXT_GROUPS = [
   { h:"开屏", keys:[{k:"welcomeText",l:"副文"}], isCfg:true },
@@ -289,6 +278,24 @@ function saveAllDebounced() {
   _saveTimer = setTimeout(saveAll, 300);
 }
 
+// Lightweight save for the chat-message hot path (send / reply / sticker).
+// saveAll() serializes the *entire* app state — every image, card, and sticker,
+// often several MB of base64 — into one IndexedDB transaction. Doing that on
+// every single message (and every fragment of a multi-part reply, 750ms apart)
+// was the main cause of messages/stickers feeling stuck on send. Chats are the
+// only thing that actually changed here, so only write that key.
+function saveChats() {
+  if (!DB) return Promise.resolve();
+  return new Promise(res => {
+    try {
+      const t = DB.transaction("kv", "readwrite");
+      t.objectStore("kv").put(chats, "chats");
+      t.oncomplete = () => res();
+      t.onerror = () => res();
+    } catch { res(); }
+  });
+}
+
 // ─── syncUI ───
 function syncUI() {
   document.getElementById("vp").setAttribute("data-layout", cfg.layout);
@@ -434,13 +441,24 @@ function applyFontSize(){
   document.documentElement.style.setProperty("--fs",cfg.fontSize+"px");
   document.documentElement.style.setProperty("--chat-fs",cfg.chatFontSize+"px");
 }
+// 从字体直链里自动提取字体族名（例如 Google Fonts 的 ?family=Noto+Serif+SC 参数），
+// 这样用户只贴一个直链就能生效，不用再手动填一遍族名——原先两个框必须完全对应
+// 才有效，光填直链永远不生效的问题就出在这里。
+function _deriveFontFamilyFromUrl(url){
+  try{
+    const fam = new URL(url).searchParams.get("family");
+    if(!fam) return "";
+    return fam.split(";")[0].split(":")[0].replace(/\+/g," ").trim();
+  }catch{ return ""; }
+}
 function applyCustomFont(){
   const el=document.getElementById("user-font");
   let css="";
   if(cfg.customFontUrl) css += `@import url("${cfg.customFontUrl}");`;
   if(cfg.customFontRaw) css += cfg.customFontRaw;
   el.innerHTML=css;
-  const fontVar=cfg.customFont ? `${cfg.customFont},"Songti SC","SimSun",serif` : `"Songti SC","SimSun","STSong",serif`;
+  const family = cfg.customFont || _deriveFontFamilyFromUrl(cfg.customFontUrl||"");
+  const fontVar = family ? `"${family}","Songti SC","SimSun",serif` : `"Songti SC","SimSun","STSong",serif`;
   document.documentElement.style.setProperty("--font",fontVar);
 }
 function applyCustomBubble(){
@@ -1014,7 +1032,7 @@ function bindGlobalClose(){
   });
   document.getElementById("ctxDel").addEventListener("click",async e=>{
     e.stopPropagation(); if(ctxTargetIdx<0) return;
-    const idx=ctxTargetIdx; hideCtxMenu(); chats.splice(idx,1); openTrans=new Set(); await saveAll(); renderChats();
+    const idx=ctxTargetIdx; hideCtxMenu(); chats.splice(idx,1); openTrans=new Set(); renderChats(); await saveChats();
   });
   document.getElementById("ctxAddCard").addEventListener("click", e => {
     e.stopPropagation();
@@ -1231,7 +1249,7 @@ window.sendMsg = async()=>{
   if(navigator.vibrate) navigator.vibrate(18);
   const _sb=document.querySelector('.input-style-1:not(.hidden) .in-btn.send,.input-style-2:not(.hidden) .i2-send,.input-style-3:not(.hidden) .i3-send:not(.alt),.input-style-4:not(.hidden) .i4-send:not(.alt)');
   if(_sb){_sb.classList.add('sent-flash');setTimeout(()=>_sb.classList.remove('sent-flash'),400);}
-  await saveAll(); appendNewChats(); getActiveInput()?.focus();
+  appendNewChats(); getActiveInput()?.focus(); await saveChats();
 };
 
 // ─── Reply ───
@@ -1272,10 +1290,10 @@ async function fireReply(){
       let nameS=texts.opp_name||"温语", avatarS=imgs.oppAvatar||"";
       if(cfg.groupMode&&groupMembers.length){ const ms=groupMembers[Math.floor(Math.random()*groupMembers.length)]; nameS=ms.name; avatarS=ms.avatar||window.DEFAULTS.PH_SVG; }
       chats.push({sender:"opp",text:"[表情包]",sticker:true,stickerId:stk.id,time:fmtTime(now),timeWithSec:fmtTime(now,true),date:fmtDate(now),ts:now.getTime(),name:nameS,avatar:avatarS});
-      await saveAll();
       if(currentApp==="chatApp"){ const f=document.getElementById("chatFlow"); const near=f.scrollHeight-f.scrollTop-f.clientHeight<80; if(!near) unreadCount++; appendNewChats(); }
       else { if(cfg.popupOn) showPopup("[表情包]",nameS,avatarS); }
       notify("[表情包]",nameS,avatarS);
+      await saveChats();
       return;
     }
   }
@@ -1305,10 +1323,10 @@ async function fireReply(){
       const firstText = arr[0];
       const firstTrans = transArr[0] || "";
       chats.push({sender:"opp", text:firstText, translation:firstTrans, time:fmtTime(now), timeWithSec:fmtTime(now,true), date:fmtDate(now), ts:now.getTime(), lyric:false, quote:"", name:name2, avatar:avatar2, fragments:[firstText]});
-      await saveAll();
       if(currentApp==="chatApp") appendNewChats();
       else if(cfg.popupOn) showPopup(firstText, name2, avatar2);
       notify(firstText, name2, avatar2);
+      saveChats();
 
       // 剩余句子依次延迟发送（固定间隔，带真实"对方正在输入"气泡，衔接更自然）
       const FRAGMENT_GAP_MS = 750;
@@ -1332,10 +1350,10 @@ async function fireReply(){
         const nextText = arr[fi];
         const nextTrans = transArr[fi] || "";
         chats.push({sender:"opp", text:nextText, translation:nextTrans, time:fmtTime(nextTime), timeWithSec:fmtTime(nextTime,true), date:fmtDate(nextTime), ts:nextTime.getTime(), lyric:false, quote:"", name:name2, avatar:avatar2, fragments:[nextText]});
-        await saveAll();
         if(currentApp==="chatApp") appendNewChats();
         else if(cfg.popupOn) showPopup(nextText, name2, avatar2);
         notify(nextText, name2, avatar2);
+        saveChats();
       }
       return; // 结束当前流程
     }
@@ -1346,11 +1364,11 @@ async function fireReply(){
   let name=texts.opp_name||"温语", avatar=imgs.oppAvatar||"";
   if(cfg.groupMode&&groupMembers.length){ const m=groupMembers[Math.floor(Math.random()*groupMembers.length)]; name=m.name; avatar=m.avatar||window.DEFAULTS.PH_SVG; }
   chats.push({sender:"opp",text,translation:trans,time:fmtTime(now),timeWithSec:fmtTime(now,true),date:fmtDate(now),ts:now.getTime(),lyric:isLyric,quote,name,avatar,fragments});
-  await saveAll();
   if(currentApp==="chatApp"){ const f=document.getElementById("chatFlow"); const near=f.scrollHeight-f.scrollTop-f.clientHeight<80; if(!near) unreadCount++; appendNewChats(); }
   else { if(cfg.popupOn) showPopup(text,name,avatar); }
   notify(text,name,avatar);
   if(cfg.autoTTS && text) playMiniMaxTTS(text);
+  await saveChats();
 }
 
 // 主动发送的定时依赖 setTimeout，而手机后台/被系统挂起会直接冻结 JS——
@@ -1380,7 +1398,7 @@ function scheduleActive(resume = false){
   }, wait);
 }
 
-window.clearAllChats = async()=>{ if(!confirm("确实要清空？")) return; chats=[]; openTrans=new Set(); await saveAll(); renderChats(); };
+window.clearAllChats = async()=>{ if(!confirm("确实要清空？")) return; chats=[]; openTrans=new Set(); renderChats(); await saveChats(); };
 
 // ─── Popup ───
 function bindPopup(){
@@ -1466,7 +1484,19 @@ window.renderCards = ()=>{
 };
 
 window.selToggle = (id,v)=>{ if(v){if(!selected.includes(id))selected.push(id);}else selected=selected.filter(x=>x!==id); updateBatch(); };
-function updateBatch(){ const b=document.getElementById("batchBar"); if(!b) return; if(selected.length){b.classList.add("on");document.getElementById("batchCnt").innerText=`已选 ${selected.length}`;} else b.classList.remove("on"); }
+function updateBatch(){
+  const b=document.getElementById("batchBar"); if(!b) return;
+  if(isBatchSelecting){ b.classList.add("on"); document.getElementById("batchCnt").innerText = selected.length?`已选 ${selected.length}`:"选择字卡"; }
+  else b.classList.remove("on");
+}
+// 批量全选/取消全选——只作用于当前搜索结果内可见的字卡，避免"全选"把被过滤掉的也选中。
+window.toggleSelectAllCards = ()=>{
+  const q=(document.getElementById("cardSearch")?.value||"").trim().toLowerCase();
+  const visibleIds = cards.filter(c=>!q||c.text.toLowerCase().includes(q)||(c.translation||"").toLowerCase().includes(q)||c.cat.toLowerCase().includes(q)).map(c=>c.id);
+  const allSelected = visibleIds.length>0 && visibleIds.every(id=>selected.includes(id));
+  selected = allSelected ? [] : visibleIds.slice();
+  window.renderCards();
+};
 window.toggleCatShield  = async c=>{ if(shieldedCats.includes(c)) shieldedCats=shieldedCats.filter(x=>x!==c); else shieldedCats.push(c); await saveAll(); window.renderCards(); };
 window.toggleCardShield = async id=>{ const c=cards.find(x=>x.id===id); if(!c) return; c.shielded=!c.shielded; await saveAll(); window.renderCards(); };
 window.delCard  = async id=>{ cards=cards.filter(c=>c.id!==id); selected=selected.filter(x=>x!==id); await saveAll(); window.renderCards(); };
@@ -1626,7 +1656,17 @@ window.toggleStickerBatchMode = () => {
   window.renderStickers();
 };
 window.stickerSelToggle = (id,v) => { if(v){ if(!stickerSelected.includes(id)) stickerSelected.push(id); } else stickerSelected=stickerSelected.filter(x=>x!==id); updateStickerBatch(); };
-function updateStickerBatch(){ const b=document.getElementById("stickerBatchBar"); if(!b) return; if(stickerSelected.length){ b.classList.add("on"); document.getElementById("stickerBatchCnt").innerText=`已选 ${stickerSelected.length}`; } else b.classList.remove("on"); }
+function updateStickerBatch(){
+  const b=document.getElementById("stickerBatchBar"); if(!b) return;
+  if(isStickerBatchSelecting){ b.classList.add("on"); document.getElementById("stickerBatchCnt").innerText = stickerSelected.length?`已选 ${stickerSelected.length}`:"选择表情包"; }
+  else b.classList.remove("on");
+}
+window.toggleSelectAllStickers = ()=>{
+  const visibleIds = stickers.map(s=>s.id);
+  const allSelected = visibleIds.length>0 && visibleIds.every(id=>stickerSelected.includes(id));
+  stickerSelected = allSelected ? [] : visibleIds.slice();
+  window.renderStickers();
+};
 window.toggleStickerShield = async id => { const s=stickers.find(x=>x.id===id); if(!s) return; s.shielded=!s.shielded; await saveAll(); window.renderStickers(); };
 window.delSticker = async id => { stickers=stickers.filter(s=>s.id!==id); stickerSelected=stickerSelected.filter(x=>x!==id); await saveAll(); window.renderStickers(); };
 window.batchShieldStickers = async v => { if(!stickerSelected.length) return; stickers.forEach(s=>{ if(stickerSelected.includes(s.id)) s.shielded=v; }); stickerSelected=[]; await saveAll(); window.renderStickers(); };
@@ -1737,7 +1777,7 @@ window.sendSticker = async id => {
   window.clearPendingQuote();
   if(cfg.soundOn) playSoundById(cfg.activeSoundId || "__builtin_thud1__");
   if(navigator.vibrate) navigator.vibrate(18);
-  await saveAll(); appendNewChats();
+  appendNewChats(); await saveChats();
 };
 
 // ─── Members ───
@@ -2041,7 +2081,15 @@ window.openApp = id=>{
   if(id==="statsApp")      { renderStats(); renderSurveys(); }
   if(id==="textsApp")      renderTextsApp();
   if(id==="chatApp"){
-    renderChats(); unreadCount=0; showHomeTypingBar(false);
+    // Only fully rebuild the message list the first time it's ever rendered.
+    // The chat DOM stays mounted while switching apps, so on every later
+    // visit we just append whatever arrived while away (or nothing) instead
+    // of tearing down and replaying the whole history's entrance animation —
+    // that full rebuild-on-every-tap was the main source of "message pop-in"
+    // lag once the chat had any real length.
+    if(renderedMsgCount===chats.length){ const f=document.getElementById("chatFlow"); if(f) f.scrollTop=f.scrollHeight; }
+    else appendNewChats();
+    unreadCount=0; showHomeTypingBar(false);
     if((replyTimer)&&!typingNode){
       const f=document.getElementById("chatFlow");
       if(f){
@@ -2348,20 +2396,10 @@ function applyCustomHomeStyles() {
   if (styleEl) styleEl.innerHTML = cfg.customHomeCss || "";
 }
 
-const DEFAULT_BUBBLE_CSS =
-`.bubble {
-  border-radius: 18px;
-  padding: 10px 15px;
-  background: var(--surface);
-}
-.row.self .bubble {
-  background: var(--text);
-  color: var(--bg);
-}`;
+const DEFAULT_BUBBLE_CSS = `background: var(--surface); border-radius: 18px;`;
 
 window.openCssHub = () => {
   openApp("cssHubApp");
-  document.getElementById("ch_fontName").value = cfg.customFont || "";
   document.getElementById("ch_fontUrl").value  = cfg.customFontUrl || "";
   document.getElementById("ch_fontRaw").value  = cfg.customFontRaw || "";
   const bubEl = document.getElementById("ch_bubbleCss");
@@ -2373,7 +2411,6 @@ window.openCssHub = () => {
 };
 
 window.applyCssHub = async () => {
-  cfg.customFont     = document.getElementById("ch_fontName").value.trim();
   cfg.customFontUrl  = document.getElementById("ch_fontUrl").value.trim();
   cfg.customFontRaw  = document.getElementById("ch_fontRaw").value.trim();
   cfg.customBubble   = document.getElementById("ch_bubbleCss").value.trim();
@@ -2391,7 +2428,6 @@ window.applyCssHub = async () => {
 window.resetCssField = async (which) => {
   if (which === "font") {
     cfg.customFont = ""; cfg.customFontUrl = ""; cfg.customFontRaw = "";
-    document.getElementById("ch_fontName").value = "";
     document.getElementById("ch_fontUrl").value = "";
     document.getElementById("ch_fontRaw").value = "";
     applyCustomFont();
@@ -2412,7 +2448,6 @@ window.resetCssField = async (which) => {
     cfg.customFont = ""; cfg.customFontUrl = ""; cfg.customFontRaw = "";
     cfg.customBubble = ""; cfg.customChatCss = "";
     cfg.customHomeCss = ""; cfg.customHomeJs = "";
-    document.getElementById("ch_fontName").value = "";
     document.getElementById("ch_fontUrl").value = "";
     document.getElementById("ch_fontRaw").value = "";
     document.getElementById("ch_bubbleCss").value = "";
