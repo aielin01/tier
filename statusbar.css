@@ -1,0 +1,118 @@
+/* ═══════════════════════════════════════════════
+   幸逢 · 状态栏系统 · statusbar.css
+   只负责"外壳"（App 容器、卡片框、编辑器）的样式；
+   状态栏本体在 sandboxed <iframe> 内以自己的 <style> 渲染，
+   两者互不干扰、不会有 class / id 冲突。
+   ═══════════════════════════════════════════════ */
+
+/* ── 入口：年鉴内的状态栏系统入口 ── */
+.sb-entry {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; margin: 0 0 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  box-shadow: var(--shadow-s); cursor: pointer;
+  transition: transform .25s var(--ease), box-shadow .25s var(--ease);
+}
+.sb-entry:active { transform: scale(.98); }
+.sb-entry-main { display: flex; align-items: center; gap: 10px; }
+.sb-entry-icon {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-soft); color: var(--text);
+}
+.sb-entry-icon svg { width: 18px; height: 18px; }
+.sb-entry-text { display: flex; flex-direction: column; gap: 2px; }
+.sb-entry-title { font-size: 14px; font-weight: 600; }
+.sb-entry-sub { font-size: 11px; color: var(--text-mute); }
+.sb-entry-arrow { color: var(--text-mute); }
+.sb-entry-arrow svg { width: 16px; height: 16px; }
+
+/* ── 聊天头像可点触发提示（不改变原有布局，仅提示可交互） ── */
+.av.statusbar-trigger, .h2-avatar.statusbar-trigger { cursor: pointer; }
+
+/* ── App 容器内的舞台 ── */
+#statusbarApp .sb-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px; }
+
+.sb-stage { display: flex; gap: 12px; width: 100%; }
+.sb-stage.sb-single { justify-content: center; }
+.sb-stage.sb-dual { align-items: stretch; }
+
+.sb-card {
+  flex: 1; min-width: 0; display: flex; flex-direction: column;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden; box-shadow: var(--shadow-s);
+}
+.sb-stage.sb-single .sb-card { max-width: 420px; width: 100%; }
+
+.sb-card-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; font-size: 12px; color: var(--text-mute);
+  border-bottom: 1px solid var(--border); background: var(--surface-2);
+}
+.sb-edit-btn {
+  border: none; background: var(--bg-soft); color: var(--text);
+  font-size: 11px; padding: 4px 10px; border-radius: 999px; cursor: pointer;
+}
+.sb-edit-btn:active { opacity: .7; }
+
+/* iframe 容器：固定比例，避免内容加载/变量替换过程中的高度跳变引起卡顿感 */
+.sb-frame-wrap { width: 100%; aspect-ratio: 3 / 4; background: #0b0f17; }
+.sb-stage.sb-single .sb-frame-wrap { aspect-ratio: 4 / 5; }
+.sb-frame {
+  width: 100%; height: 100%; border: 0; display: block;
+  background: transparent;
+}
+
+/* ── 编辑器（复用全局 modal，本区块只定义内部结构） ── */
+.sb-editor { display: flex; flex-direction: column; gap: 12px; max-height: 62vh; }
+.sb-editor-tabs { display: flex; gap: 6px; }
+.sb-etab {
+  flex: 1; padding: 8px 0; border: none; border-radius: 10px;
+  background: var(--surface-2); color: var(--text-mute); font-size: 12px; cursor: pointer;
+  transition: background .2s var(--ease), color .2s var(--ease);
+}
+.sb-etab.on { background: var(--text); color: var(--surface); }
+.sb-editor-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 2px; }
+
+.sb-field-list { display: flex; flex-direction: column; gap: 10px; }
+.sb-field-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sb-field-lbl { flex: 0 0 auto; font-size: 12px; color: var(--text-mute); min-width: 64px; }
+.sb-field-ctl { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.sb-field-input, .sb-mode-select, .sb-cat-select {
+  flex: 1; min-width: 0; font-size: 13px; padding: 7px 10px;
+  border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); color: var(--text);
+}
+.sb-mode-select { flex: 0 0 84px; }
+.sb-reroll-btn {
+  flex: 0 0 auto; width: 30px; height: 30px; border: none; border-radius: 8px;
+  background: var(--bg-soft); color: var(--text); cursor: pointer; font-size: 15px;
+}
+.sb-reroll-btn:active { transform: rotate(120deg); transition: transform .3s var(--ease); }
+
+.sb-html-area {
+  width: 100%; height: 34vh; resize: vertical;
+  font-family: var(--codeFont, ui-monospace, monospace); font-size: 11.5px; line-height: 1.5;
+  padding: 10px; border: 1px solid var(--border); border-radius: 10px;
+  background: var(--surface-2); color: var(--text);
+}
+.sb-editor-actions { display: flex; gap: 8px; }
+.sb-hint { font-size: 11px; color: var(--text-mute); line-height: 1.6; }
+.sb-hint code { background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
+
+.sb-settings { display: flex; flex-direction: column; gap: 16px; }
+.sb-set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sb-set-row span:first-child { font-size: 13px; }
+.sb-set-ctl { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
+.sb-set-ctl input[type="range"] { flex: 1; max-width: 140px; }
+#sbIntervalDisp { font-size: 12px; color: var(--text-mute); min-width: 44px; text-align: right; }
+.sb-set-actions { flex-wrap: wrap; }
+
+.pill-btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text-mute); }
+.pill-btn.danger { background: #e5484d; color: #fff; }
+
+.sb-empty-tip { text-align: center; padding: 30px 0; color: var(--text-mute); font-size: 12px; }
+
+@media (max-width: 380px) {
+  .sb-stage.sb-dual { gap: 8px; }
+  .sb-card-bar { padding: 7px 10px; }
+}

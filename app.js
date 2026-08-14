@@ -215,6 +215,7 @@ async function init() {
     surveys       = (await dbGet("surveys",null))     || window.DEFAULTS.surveys;
     surveyRecords = (await dbGet("surveyRecords",[])) || [];
     stickers      = (await dbGet("stickers",[]))      || [];
+    if (window.initStatusbar) await window.initStatusbar();
   } catch(e){ console.warn(e); }
 
   // 迁移旧版单一字体 CSS 字段到新的"直链 / 其他"两个字段
@@ -904,7 +905,7 @@ function buildMsgInto(frag, m, idx, ctx, lastDateRef){
     : `<div class="bubble message ${isSelf?"message-sent":"message-received"}" data-idx="${idx}">${escapeHtml(m.text).replace(/\n/g,"<br>")}</div>
       ${m.translation?`<div class="bubble-translation ${transClass}" id="trans-${idx}">${escapeHtml(m.translation)}</div>`:""}`;
   row.innerHTML=`
-    ${ctx.showAv?`<div class="av-col"><img class="av" src="${av}">${avMetaHtml}</div>`:""}
+    ${ctx.showAv?`<div class="av-col"><img class="av statusbar-trigger" src="${av}" onclick="event.stopPropagation();window.openStatusbarFor && window.openStatusbarFor('${isSelf?"self":"opp"}')">${avMetaHtml}</div>`:""}
     <div class="stack">
       ${showNm?`<div class="name-tag">${escapeHtml(nm)}</div>`:""}
       ${bodyHtml}
@@ -2079,6 +2080,7 @@ window.openApp = id=>{
   if(id==="cardsApp")      { window.renderCards(); window.renderStickers(); }
   if(id==="groupApp")      window.renderMembers();
   if(id==="statsApp")      { renderStats(); renderSurveys(); }
+  if(id==="statusbarApp")  { window.renderStatusbarApp && window.renderStatusbarApp(); window.sbStartTicker && window.sbStartTicker(); }
   if(id==="textsApp")      renderTextsApp();
   if(id==="chatApp"){
     // Only fully rebuild the message list the first time it's ever rendered.
@@ -2102,7 +2104,7 @@ window.openApp = id=>{
     }
   }
 };
-window.closeApp = id=>{ document.getElementById(id).classList.remove("active"); if(currentApp===id){currentApp=null;setDockActive(""); if(id==="chatApp"){ if(typingNode){typingNode.remove();typingNode=null;} if(replyTimer) showHomeTypingBar(true); }} };
+window.closeApp = id=>{ document.getElementById(id).classList.remove("active"); if(currentApp===id){currentApp=null;setDockActive(""); if(id==="chatApp"){ if(typingNode){typingNode.remove();typingNode=null;} if(replyTimer) showHomeTypingBar(true); } if(id==="statusbarApp"){ window.sbStopTicker && window.sbStopTicker(); }} };
 
 // ─── Music ───
 function bindMusicPlayer(){

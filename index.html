@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="https://i.postimg.cc/281KzSNY/IMG-3531.jpg">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="statusbar.css">
 <!-- 用户自定义样式注入点：必须在 style.css 之后加载，
      否则同等优先级（同样带 !important）的声明会因为源码顺序在前而被
      style.css 中后出现的内置规则覆盖，导致"明明设置了气泡却看不出变化" -->
@@ -577,6 +578,20 @@
     </div>
     <div class="stab-panels-wrap">
       <div class="stab-panel active" id="sstab-almanac">
+        <div class="sb-entry" onclick="window.openStatusbarFor('dual')">
+          <div class="sb-entry-main">
+            <div class="sb-entry-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/><line x1="5" y1="8" x2="9" y2="8"/><line x1="5" y1="12" x2="9" y2="12"/><line x1="15" y1="8" x2="19" y2="8"/><line x1="15" y1="12" x2="19" y2="12"/></svg>
+            </div>
+            <div class="sb-entry-text">
+              <span class="sb-entry-title">状态栏系统</span>
+              <span class="sb-entry-sub">自定义机能档案 · 字卡库绑定 · 单人/双人视图</span>
+            </div>
+          </div>
+          <span class="sb-entry-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </span>
+        </div>
         <div class="deck" id="statsDeck"></div>
       </div>
       <div class="stab-panel" id="sstab-survey">
@@ -586,6 +601,25 @@
         </div>
         <div class="deck" id="surveyDeck"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- ══ STATUSBAR APP ══ -->
+  <div class="app" id="statusbarApp">
+    <div class="app-head">
+      <button class="h-btn" onclick="closeApp('statusbarApp')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="t">状态栏</span>
+      <button class="h-btn placeholder"></button>
+    </div>
+    <div class="stab-bar">
+      <button class="stab" data-sbv="self" onclick="window.switchStatusbarView('self')">我方</button>
+      <button class="stab" data-sbv="opp" onclick="window.switchStatusbarView('opp')">对方</button>
+      <button class="stab active" data-sbv="dual" onclick="window.switchStatusbarView('dual')">双人</button>
+    </div>
+    <div class="sb-scroll">
+      <div class="sb-stage" id="sbStage"></div>
     </div>
   </div>
 
@@ -1192,10 +1226,12 @@
   <input type="file" id="fpCard" accept=".txt"            style="display:none">
   <input type="file" id="fpSticker" accept="image/*" multiple style="display:none">
   <input type="file" id="fpSurvey" accept=".json"         style="display:none">
+  <input type="file" id="fpStatusbar" accept=".json"      style="display:none">
 
 </div>
 
 <script src="app.js"></script>
+<script src="statusbar.js"></script>
 <script>
 // Settings tab switcher
 window.switchStab = function(tab) {
