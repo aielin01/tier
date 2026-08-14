@@ -615,16 +615,15 @@
         <div class="sblock">
           <div class="sblock-label">头像</div>
           <div class="sav-row">
-            <div class="sav-item" onclick="uploadImg('selfAvatar')">
-              <div class="sav-ring"><img data-img="selfAvatar" class="ph sav-img"></div>
+            <div class="sav-item">
+              <div class="sav-ring" onclick="uploadImg('selfAvatar')"><img data-img="selfAvatar" class="ph sav-img"></div>
               <span>我</span>
             </div>
-            <div class="sav-item" onclick="uploadImg('oppAvatar')">
-              <div class="sav-ring"><img data-img="oppAvatar" class="ph sav-img"></div>
-              <span>彼</span>
+            <div class="sav-item">
+              <div class="sav-ring" onclick="uploadImg('oppAvatar')"><img data-img="oppAvatar" class="ph sav-img"></div>
+              <span class="editable" data-key="opp_name" data-placeholder="彼"></span>
             </div>
           </div>
-          <div class="sav-oppname editable" data-key="opp_name" data-placeholder="彼"></div>
         </div>
 
         <!-- 布局 -->
@@ -684,11 +683,6 @@
               <span>文案中心</span>
               <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
-            <div class="snav-item" onclick="openCustomHomeApp()">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
-              <span>自定义主页</span>
-              <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
           </div>
         </div>
 
@@ -703,17 +697,21 @@
         <div class="sblock">
           <div class="sblock-label">主题</div>
           <div class="stheme-row">
-            <div class="stheme-opt light" data-theme="light">
-              <div class="stheme-orb" onclick="event.stopPropagation();pickThemeBg('light')"></div>
-              <span onclick="setTheme('light')">浅色</span>
+            <div class="stheme-opt light" data-theme="light" onclick="setTheme('light')">
+              <div class="stheme-orb"></div>
+              <span>浅色</span>
             </div>
-            <div class="stheme-opt dark" data-theme="dark">
-              <div class="stheme-orb" onclick="event.stopPropagation();pickThemeBg('dark')"></div>
-              <span onclick="setTheme('dark')">深色</span>
+            <div class="stheme-opt dark" data-theme="dark" onclick="setTheme('dark')">
+              <div class="stheme-orb"></div>
+              <span>深色</span>
             </div>
-            <div class="stheme-opt system" data-theme="system">
-              <div class="stheme-orb" onclick="event.stopPropagation();setTheme('system')"></div>
-              <span onclick="setTheme('system')">跟随</span>
+            <div class="stheme-opt system" data-theme="system" onclick="setTheme('system')">
+              <div class="stheme-orb"></div>
+              <span>跟随</span>
+            </div>
+            <div class="stheme-opt custom" data-theme="custom">
+              <div class="stheme-orb" id="customThemeOrb"></div>
+              <span onclick="setTheme('custom')">自定义</span>
             </div>
           </div>
           <input type="color" id="themeBgPicker" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;">
@@ -746,14 +744,9 @@
         <div class="sblock">
           <div class="sblock-label">更多</div>
           <div class="snav-list">
-            <div class="snav-item" onclick="openFontModal()">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
-              <span>字体设置</span>
-              <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
-            <div class="snav-item" onclick="openBgCssModal()">
+            <div class="snav-item" onclick="openCssHub()">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-              <span>背景 / CSS</span>
+              <span>自定义样式</span>
               <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           </div>
@@ -840,22 +833,6 @@
               <span>引用回复</span>
               <div class="sw" id="sw_quoteOn" onclick="cfgToggle('quoteOn')"><div class="sw-indicator"></div></div>
             </div>
-            <div class="stoggle-row">
-              <span>连句</span>
-              <div class="sw" id="sw_sentenceJoin" onclick="cfgToggle('sentenceJoin')"><div class="sw-indicator"></div></div>
-            </div>
-          </div>
-          <div class="snav-list" style="margin-top:8px;">
-            <div class="snav-item" onclick="openSepSettings()">
-              <span>连句符号设置</span>
-              <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
-          </div>
-          <div class="stoggle-group" style="margin-top:8px;">
-            <div class="stoggle-row">
-              <span>主动发送</span>
-              <div class="sw" id="sw_activeSend" onclick="cfgToggle('activeSend')"><div class="sw-indicator"></div></div>
-            </div>
           </div>
           <div class="sinput-row" style="margin-top:10px;">
             <span class="sinput-label">回复延迟（秒）</span>
@@ -863,6 +840,24 @@
               <input class="inp sm" type="number" id="delayMin" min="0" max="60" value="2" onchange="cfgSet('delayMin',+this.value)">
               <span class="range-dash">—</span>
               <input class="inp sm" type="number" id="delayMax" min="0" max="120" value="5" onchange="cfgSet('delayMax',+this.value)">
+            </div>
+          </div>
+          <div class="stoggle-group" style="margin-top:10px;">
+            <div class="stoggle-row">
+              <span>连句</span>
+              <div class="sw" id="sw_sentenceJoin" onclick="cfgToggle('sentenceJoin')"><div class="sw-indicator"></div></div>
+            </div>
+          </div>
+          <div class="snav-list">
+            <div class="snav-item" onclick="openSepSettings()">
+              <span>连句符号设置</span>
+              <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+          <div class="stoggle-group" style="margin-top:10px;">
+            <div class="stoggle-row">
+              <span>主动发送</span>
+              <div class="sw" id="sw_activeSend" onclick="cfgToggle('activeSend')"><div class="sw-indicator"></div></div>
             </div>
           </div>
           <div class="sinput-row" id="activeIntervalRow">
@@ -875,27 +870,20 @@
           </div>
         </div>
 
-        <!-- 表情包 -->
+        <!-- 表情包与群组 -->
         <div class="sblock">
-          <div class="sblock-label">表情包</div>
+          <div class="sblock-label">表情包与群组</div>
           <div class="stoggle-group">
             <div class="stoggle-row">
               <span>对方随机发送表情包</span>
               <div class="sw" id="sw_stickerOn" onclick="cfgToggle('stickerOn')"><div class="sw-indicator"></div></div>
             </div>
-          </div>
-        </div>
-
-        <!-- 群组 -->
-        <div class="sblock">
-          <div class="sblock-label">群组</div>
-          <div class="stoggle-group">
             <div class="stoggle-row">
               <span>群聊模式</span>
               <div class="sw" id="sw_groupMode" onclick="cfgToggle('groupMode')"><div class="sw-indicator"></div></div>
             </div>
           </div>
-          <div class="snav-list" style="margin-top:8px;">
+          <div class="snav-list">
             <div class="snav-item" onclick="openApp('groupApp')">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               <span>成员管理</span>
@@ -977,12 +965,12 @@
               <input class="inp" id="cfg_ttsVoice" placeholder="male-qn-qingse" style="flex:1;min-width:0;text-align:right;" oninput="cfgSet('ttsVoice',this.value.trim())">
             </div>
             <div class="sinput-row">
-              <span class="sinput-label">语速</span>
-              <input class="inp sm" type="number" step="0.1" id="cfg_ttsSpeed" placeholder="1.0" style="width:64px;" oninput="cfgSet('ttsSpeed',parseFloat(this.value)||1)">
-            </div>
-            <div class="sinput-row">
-              <span class="sinput-label">音量</span>
-              <input class="inp sm" type="number" step="0.1" id="cfg_ttsVol" placeholder="1.0" style="width:64px;" oninput="cfgSet('ttsVol',parseFloat(this.value)||1)">
+              <span class="sinput-label">语速 / 音量</span>
+              <div class="range-pair">
+                <input class="inp sm" type="number" step="0.1" id="cfg_ttsSpeed" placeholder="1.0" style="width:56px;" oninput="cfgSet('ttsSpeed',parseFloat(this.value)||1)">
+                <span class="range-dash">/</span>
+                <input class="inp sm" type="number" step="0.1" id="cfg_ttsVol" placeholder="1.0" style="width:56px;" oninput="cfgSet('ttsVol',parseFloat(this.value)||1)">
+              </div>
             </div>
           </div>
           <div class="stts-test">
@@ -1025,6 +1013,18 @@
           </div>
         </div>
 
+        <div class="sblock">
+          <div class="sblock-label">关于</div>
+          <div class="snav-list">
+            <div class="snav-item" onclick="showUpdateLog()">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+              <span>更新公告</span>
+              <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>
+          <div class="sver-tag" onclick="tapVersionTag()">v1.0</div>
+        </div>
+
       </div>
     </div>
 
@@ -1032,51 +1032,55 @@
   </div><!-- /settingsApp -->
 
   <!-- ══ Sub-apps ══ -->
-<!-- Custom Home -->
-<div class="app" id="customHomeApp">
+<!-- 自定义样式（字体 / 气泡 / 聊天界面 / 主页）统一入口 -->
+<div class="app" id="cssHubApp">
   <div class="app-head">
-    <button class="h-btn" onclick="closeApp('customHomeApp')">
+    <button class="h-btn" onclick="closeApp('cssHubApp')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <span class="t">自定义主页</span>
-    <button class="h-btn" onclick="applyCustomHome()">
+    <span class="t">自定义样式</span>
+    <button class="h-btn" onclick="applyCssHub()">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
     </button>
   </div>
   <div class="deck" style="gap:12px;">
+
     <div class="cfg-group">
-      <div class="cfg-group-label">CSS 注入</div>
-      <div class="cfg-group-body" style="padding:12px;">
-        <textarea class="fld area" id="ch_css" style="min-height:120px;font-family:monospace;font-size:11px;" placeholder=".l1 { gap: 6px; } .anni-wrap { display:none; }"></textarea>
+      <div class="cfg-group-label">字体</div>
+      <div class="cfg-group-body" style="padding:12px;display:flex;flex-direction:column;gap:10px;">
+        <input class="fld" id="ch_fontName" placeholder="字体族名，如 NanoFullSong（留空使用宋体）">
+        <input class="fld" id="ch_fontUrl" placeholder="直链地址（字体文件 / CSS 直链）">
+        <textarea class="fld area" id="ch_fontRaw" style="min-height:60px;font-family:monospace;font-size:11px;" placeholder="其他方式：直接粘贴 @font-face / @import 等完整 CSS"></textarea>
+        <button class="sbtn ghost" onclick="resetCssField('font')">重置字体</button>
       </div>
     </div>
+
     <div class="cfg-group">
-      <div class="cfg-group-label">JS 注入</div>
-      <div class="cfg-group-body" style="padding:12px;">
-        <textarea class="fld area" id="ch_js" style="min-height:120px;font-family:monospace;font-size:11px;" placeholder="// 在主页渲染后执行&#10;// document.querySelector('.anni-counter').style.fontSize='60px'"></textarea>
+      <div class="cfg-group-label">气泡 CSS</div>
+      <div class="cfg-group-body" style="padding:12px;display:flex;flex-direction:column;gap:8px;">
+        <textarea class="fld area" id="ch_bubbleCss" style="min-height:100px;font-family:monospace;font-size:11px;"></textarea>
+        <button class="sbtn ghost" onclick="resetCssField('bubble')">重置气泡 CSS</button>
       </div>
     </div>
+
     <div class="cfg-group">
-      <div class="cfg-group-label">组件可见性</div>
-      <div class="cfg-group-body" id="chVisGrid"></div>
-    </div>
-    <div class="cfg-group">
-      <div class="cfg-group-label">预设方案</div>
-      <div class="cfg-group-body">
-        <div class="cfg-row tappable" onclick="applyHomePreset('minimal')">
-          <span class="cfg-label">极简（仅聊天入口）</span>
-          <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </div>
-        <div class="cfg-row tappable" onclick="applyHomePreset('photo')">
-          <span class="cfg-label">画廊（突出图片）</span>
-          <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </div>
-        <div class="cfg-row tappable" onclick="applyHomePreset('reset')">
-          <span class="cfg-label">重置为默认</span>
-          <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </div>
+      <div class="cfg-group-label">聊天界面 CSS</div>
+      <div class="cfg-group-body" style="padding:12px;display:flex;flex-direction:column;gap:8px;">
+        <textarea class="fld area" id="ch_chatCss" style="min-height:100px;font-family:monospace;font-size:11px;" placeholder="覆盖聊天页整体：顶部头像栏 .chat-head、消息区 .chat-flow、底部输入栏 .chat-input-bar 等"></textarea>
+        <button class="sbtn ghost" onclick="resetCssField('chat')">重置聊天 CSS</button>
       </div>
     </div>
+
+    <div class="cfg-group">
+      <div class="cfg-group-label">主页 CSS / JS</div>
+      <div class="cfg-group-body" style="padding:12px;display:flex;flex-direction:column;gap:8px;">
+        <textarea class="fld area" id="ch_homeCss" style="min-height:100px;font-family:monospace;font-size:11px;" placeholder=".l1 { gap: 6px; } .anni-wrap { display:none; }"></textarea>
+        <textarea class="fld area" id="ch_homeJs" style="min-height:100px;font-family:monospace;font-size:11px;" placeholder="// 主页渲染后执行一次&#10;// document.querySelector('.anni-counter').style.fontSize='60px'"></textarea>
+        <button class="sbtn ghost" onclick="resetCssField('home')">重置主页 CSS / JS</button>
+      </div>
+    </div>
+
+    <button class="pill-btn" onclick="resetCssField('all')" style="color:var(--danger,#e74c3c);">全部重置</button>
   </div>
 </div>
   <!-- Texts -->
@@ -1091,112 +1095,6 @@
       </button>
     </div>
     <div class="deck" id="textsDeck"></div>
-  </div>
-
-  <!-- Appearance -->
-  <div class="app" id="appearanceApp">
-    <div class="app-head">
-      <button class="h-btn" onclick="closeApp('appearanceApp')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <span class="t">外观</span>
-      <button class="h-btn placeholder"></button>
-    </div>
-    <div class="deck">
-      <div class="cfg-group">
-        <div class="cfg-group-label">聊天背景</div>
-        <div class="cfg-group-body">
-          <div class="cfg-row">
-            <span class="cfg-label">背景图</span>
-            <div style="display:flex;gap:6px;">
-              <button class="sm-action-btn" onclick="imgPickKey='chatBg';document.getElementById('fpImg').click()">上传</button>
-              <button class="sm-action-btn" onclick="resetBg()">重置</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="cfg-group">
-        <div class="cfg-group-label">轮播图</div>
-        <div class="cfg-group-body">
-          <div id="carManage"></div>
-          <div class="cfg-row tappable" onclick="addCarouselImg()">
-            <span class="cfg-label">添加</span>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </div>
-        </div>
-      </div>
-      <div class="cfg-group">
-        <div class="cfg-group-label">气泡 CSS</div>
-        <div class="cfg-group-body" style="padding:12px;">
-          <textarea class="fld area" id="cf_bub" oninput="cfgSet('customBubble',this.value)" style="min-height:60px;" placeholder=".bubble { … }"></textarea>
-        </div>
-      </div>
-      <div class="cfg-group">
-        <div class="cfg-group-label">聊天 CSS</div>
-        <div class="cfg-group-body" style="padding:12px;">
-          <textarea class="fld area" id="cf_chatcss" oninput="cfgSet('customChatCss',this.value)" style="min-height:60px;"></textarea>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Style -->
-  <div class="app" id="styleApp">
-    <div class="app-head">
-      <button class="h-btn" onclick="closeApp('styleApp')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <span class="t">样式</span>
-      <button class="h-btn placeholder"></button>
-    </div>
-    <div class="deck">
-      <div class="cfg-group">
-        <div class="cfg-group-label">聊天界面</div>
-        <div class="cfg-group-body">
-          <div class="cfg-row">
-            <span class="cfg-label">经典极简</span>
-            <input type="radio" name="cs" class="radio" value="1" onchange="setChatStyle(1)">
-          </div>
-          <div class="cfg-row">
-            <span class="cfg-label">胶囊紧凑</span>
-            <input type="radio" name="cs" class="radio" value="2" onchange="setChatStyle(2)">
-          </div>
-          <div class="cfg-row">
-            <span class="cfg-label">双向私语</span>
-            <input type="radio" name="cs" class="radio" value="3" onchange="setChatStyle(3)">
-          </div>
-          <div class="cfg-row">
-            <span class="cfg-label">极简日记</span>
-            <input type="radio" name="cs" class="radio" value="4" onchange="setChatStyle(4)">
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Font -->
-  <div class="app" id="fontApp">
-    <div class="app-head">
-      <button class="h-btn" onclick="closeApp('fontApp')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <span class="t">字体</span>
-      <button class="h-btn placeholder"></button>
-    </div>
-    <div class="deck">
-      <div class="cfg-group">
-        <div class="cfg-group-label">字体族名</div>
-        <div class="cfg-group-body" style="padding:12px;">
-          <input class="fld" id="cf_font" placeholder="如 NanoFullSong" oninput="cfgSet('customFont',this.value)">
-        </div>
-      </div>
-      <div class="cfg-group">
-        <div class="cfg-group-label">CSS / URL</div>
-        <div class="cfg-group-body" style="padding:12px;">
-          <textarea class="fld area" id="cf_fontcss" placeholder="@import url(…) 或直接粘贴地址" oninput="cfgSet('customFontCss',this.value)" style="min-height:80px;font-family:monospace;font-size:11px;"></textarea>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- Sound -->
@@ -1323,13 +1221,7 @@ document.getElementById('settingsApp').addEventListener('transitionend', functio
     if (el) el.value = cfg[map[id]];
   });
   const cf = document.getElementById('cf_font');
-  const cfc = document.getElementById('cf_fontcss');
   if (cf) cf.value = cfg.customFont || '';
-  if (cfc) cfc.value = cfg.customFontCss || '';
-  const bub = document.getElementById('cf_bub');
-  const chatcss = document.getElementById('cf_chatcss');
-  if (bub) bub.value = cfg.customBubble || '';
-  if (chatcss) chatcss.value = cfg.customChatCss || '';
   // sync layout selectors
   document.querySelectorAll('.slayout-opt[data-v]').forEach(el =>
     el.classList.toggle('active', +el.dataset.v === cfg.layout));

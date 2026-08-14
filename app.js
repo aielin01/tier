@@ -8,20 +8,20 @@ window.DEFAULTS = {
     sentenceJoin:true, activeSend:false, activeMin:5, activeMax:20, nextActiveAt:0,
     popupOn:true, notifOn:false, soundOn:true, showAvatar:true, showName:true,
     showTime:true, showRead:true, showSelfRead:false, showSelfName:false,readText:"",
-    customFont:"", customFontCss:"", customBubble:"", customChatCss:"",
+    customFont:"", customFontUrl:"", customFontRaw:"", customBubble:"", customChatCss:"",
     groupMode:false, chatStyle:1, inputPlaceholder:"",
     welcomeText:"", timeShowSeconds:false,
     oppTime:"", oppTimeDate:"", oppTimeSetAt:0, oppCustomTime:true,
     musicUrl:"", activeSoundId:"__builtin_thud1__",
-customHomeCss:"", customHomeJs:"", homeVisibility:{}, hideAesBg:false, hidePolarBg:false,minimaxKey: "", minimaxVoice: "male-qn-qingse", autoTTS: false,ttsUrl: "https://api.minimax.chat/v1/t2a_v2",
+customHomeCss:"", customHomeJs:"", hideAesBg:false, hidePolarBg:false,minimaxKey: "", minimaxVoice: "male-qn-qingse", autoTTS: false,ttsUrl: "https://api.minimax.chat/v1/t2a_v2",
     ttsKey: "",
     ttsModel: "speech-01-turbo",
     ttsVoice: "male-qn-qingse",
     ttsSpeed: 1.0,
     ttsVol: 1.0,
     ttsPersist: false,
-    sepPool: ["，","。","！","…","？","～"], sepNoneChance: 20,
-    stickerOn: false, bgLight: "", bgDark: "",
+    sepPool: ["，","。","！","…","？","～"],
+    stickerOn: false, customBg: "",
   },
   imgs: {
   selfAvatar: "", oppAvatar: "",
@@ -69,7 +69,7 @@ const SEP_POOL=["，","。","！","…","？","～"];
 const STICKER_CHANCE=15; // 对方随机发送表情包的概率（%），不开放给用户调节
 
 let cfg={}, imgs={}, texts={}, cards=[], chats=[], groupMembers=[], sounds=[], stickers=[];
-let shieldedCats=[], selected=[], foldedCats=[], anniversaries=[], carousel=[];
+let shieldedCats=[], selected=[], foldedCats=[], anniversaries=[];
 let surveys=[], surveyRecords=[], surveyFill=null, editingSurvey=null, editingSurveyIsNew=false;
 let activeTimer=null, replyTimer=null, typingNode=null, currentApp=null;
 let openTrans=new Set(), pendingQuote=null, pendingQuoteFrom="";
@@ -100,21 +100,40 @@ const UPDATE_LOG = [
       "主题设定的圆圈现可直接点击更改背景色",
       "设置界面精简整合",
       "更换全部消息提示音，音量调整为最大",
-      "清理文案中心内已失效或从未生效的设置项"
+      "清理文案中心内已失效或从未生效的设置项",
+      "头像下方的名字文字直接点击改名，不再另起一行",
+      "主题新增第四个自定义圆圈：轻点切换，长按改色，其余三个圆圈逻辑不变",
+      "连续消息改为固定间隔发送，并补上气泡输入提示，衔接更顺滑",
+      "数据页新增「更新公告」入口，可随时回看"
     ]
   }
 ];
-function maybeShowUpdateLog(){
-  const seen = +(localStorage.getItem("updateLogSeen") || 0);
-  if (seen >= UPDATE_LOG_VERSION) return;
-  const html = UPDATE_LOG
+function _renderUpdateLogHtml(){
+  return UPDATE_LOG
     .filter(e=>e.v<=UPDATE_LOG_VERSION)
     .sort((a,b)=>b.v-a.v)
     .map(e=>`<ul class="update-log-list">${e.items.map(t=>`<li>${escapeHtml(t)}</li>`).join("")}</ul>`)
     .join("");
-  modal("更新说明", `${html}<button class="pill-btn" onclick="closeModal()">知道了</button>`);
+}
+function maybeShowUpdateLog(){
+  const seen = +(localStorage.getItem("updateLogSeen") || 0);
+  if (seen >= UPDATE_LOG_VERSION) return;
+  modal("更新说明", `${_renderUpdateLogHtml()}<button class="pill-btn" onclick="closeModal()">知道了</button>`);
   localStorage.setItem("updateLogSeen", String(UPDATE_LOG_VERSION));
 }
+window.showUpdateLog = ()=>{
+  modal("更新说明", `${_renderUpdateLogHtml()}<button class="pill-btn" onclick="closeModal()">知道了</button>`);
+};
+let _verTapCount=0, _verTapTimer=null;
+window.tapVersionTag = ()=>{
+  _verTapCount++;
+  clearTimeout(_verTapTimer);
+  _verTapTimer=setTimeout(()=>{ _verTapCount=0; }, 1500);
+  if(_verTapCount>=5){
+    _verTapCount=0;
+    modal("", `<div style="font-size:calc(var(--fs)*.88);line-height:2;color:var(--text-mute);white-space:pre-wrap;">不知道下次更新会是猴年马月了…\n希望大家用的开心，以及！\n一周后会重置密钥，请大家注意哦。</div><button class="pill-btn" onclick="closeModal()">好嘞</button>`);
+  }
+};
 
 const TEXT_GROUPS = [
   { h:"开屏", keys:[{k:"welcomeText",l:"副文"}], isCfg:true },
@@ -182,8 +201,6 @@ function dbSet(k,v) {
 // ─── Utils ───
 function randomSep(){
   const pool = (cfg.sepPool && cfg.sepPool.length) ? cfg.sepPool : SEP_POOL;
-  const noneChance = (cfg.sepNoneChance!=null) ? cfg.sepNoneChance : 20;
-  if (Math.random()*100 < noneChance) return "";
   return pool[Math.floor(Math.random()*pool.length)];
 }
 function escapeHtml(s){ return String(s??"").replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">").replace(/'/g,"'"); }
@@ -206,11 +223,18 @@ async function init() {
     shieldedCats  = (await dbGet("shieldedCats",[]))  || [];
     foldedCats    = (await dbGet("foldedCats",[]))    || [];
     anniversaries = (await dbGet("anniversaries",null))|| window.DEFAULTS.anniversaries;
-    carousel      = (await dbGet("carousel",[]))      || [];
     surveys       = (await dbGet("surveys",null))     || window.DEFAULTS.surveys;
     surveyRecords = (await dbGet("surveyRecords",[])) || [];
     stickers      = (await dbGet("stickers",[]))      || [];
   } catch(e){ console.warn(e); }
+
+  // 迁移旧版单一字体 CSS 字段到新的"直链 / 其他"两个字段
+  if (cfg.customFontCss && !cfg.customFontUrl && !cfg.customFontRaw) {
+    const v = cfg.customFontCss.trim();
+    if (v.startsWith("@") || v.startsWith("/*")) cfg.customFontRaw = v;
+    else cfg.customFontUrl = v;
+    delete cfg.customFontCss;
+  }
 
   document.getElementById("dockL1").innerHTML = DOCK_HTML;
   document.getElementById("dockL2").innerHTML = DOCK_HTML;
@@ -223,6 +247,7 @@ async function init() {
   bindGlobalClose();
   bindPopup();
   bindMosaicLongPress();
+  bindCustomThemeOrb();
   syncUI();
   initWelcomeParticles();
   renderChats();
@@ -247,7 +272,7 @@ async function saveAll() {
       const data = {
         cfg, imgs, texts, cards, chats,
         members: groupMembers, sounds,
-        shieldedCats, foldedCats, anniversaries, carousel,
+        shieldedCats, foldedCats, anniversaries,
         surveys, surveyRecords, stickers
       };
       for (const [k, v] of Object.entries(data)) s.put(v, k);
@@ -361,24 +386,46 @@ document.querySelectorAll(".stheme-opt[data-theme]").forEach(el =>
 
 function setSw(id,v){ const el=document.getElementById(id); if(!el)return; v?el.classList.add("on"):el.classList.remove("on"); }
 
+// 主题：浅色/深色/跟随系统三种逻辑保持原样；"自定义"是第四个圆圈——
+// 轻点＝切换到自定义主题，长按＝打开取色器改颜色（见 bindCustomThemeOrb）。
+function isColorDark(hex){
+  hex=(hex||"").replace("#","");
+  if(hex.length===3) hex=hex.split("").map(c=>c+c).join("");
+  if(hex.length!==6) return false;
+  const r=parseInt(hex.substr(0,2),16), g=parseInt(hex.substr(2,2),16), b=parseInt(hex.substr(4,2),16);
+  return (0.299*r+0.587*g+0.114*b)/255 < 0.5;
+}
 function applyTheme(){
-  const isDark=cfg.theme==="dark"||(cfg.theme==="system"&&matchMedia("(prefers-color-scheme:dark)").matches);
-  document.documentElement.setAttribute("data-theme",isDark?"dark":"light");
-  const custom = isDark ? cfg.bgDark : cfg.bgLight;
-  if(custom) document.documentElement.style.setProperty("--bg", custom);
+  let isDark;
+  if(cfg.theme==="custom") isDark = isColorDark(cfg.customBg || "#f5f6f8");
+  else isDark = cfg.theme==="dark" || (cfg.theme==="system" && matchMedia("(prefers-color-scheme:dark)").matches);
+  document.documentElement.setAttribute("data-theme", isDark?"dark":"light");
+  if(cfg.theme==="custom" && cfg.customBg) document.documentElement.style.setProperty("--bg", cfg.customBg);
   else document.documentElement.style.removeProperty("--bg");
   document.querySelectorAll(".stheme-opt[data-theme]").forEach(el=>
     el.classList.toggle("active", el.dataset.theme===cfg.theme));
-  const lightOrb=document.querySelector(".stheme-opt.light .stheme-orb");
-  const darkOrb=document.querySelector(".stheme-opt.dark .stheme-orb");
-  if(lightOrb) lightOrb.style.background = cfg.bgLight || "";
-  if(darkOrb) darkOrb.style.background = cfg.bgDark || "";
+  const customOrb=document.getElementById("customThemeOrb");
+  if(customOrb) customOrb.style.background = cfg.customBg || "";
 }
-window.pickThemeBg = (which)=>{
+function bindCustomThemeOrb(){
+  const el=document.getElementById("customThemeOrb"); if(!el||el.dataset.bound) return;
+  el.dataset.bound="1";
+  let timer=null, longPressed=false;
+  const start=()=>{ longPressed=false; timer=setTimeout(()=>{ longPressed=true; if(navigator.vibrate) navigator.vibrate(22); openCustomThemeColorPicker(); },420); };
+  const cancel=()=>{ if(timer) clearTimeout(timer); timer=null; };
+  const end=(ev)=>{ ev.stopPropagation(); cancel(); if(!longPressed) window.setTheme("custom"); };
+  el.addEventListener("mousedown",start);
+  el.addEventListener("touchstart",start,{passive:true});
+  el.addEventListener("mouseup",end);
+  el.addEventListener("touchend",end);
+  el.addEventListener("mouseleave",cancel);
+  el.addEventListener("touchmove",cancel,{passive:true});
+}
+window.openCustomThemeColorPicker = ()=>{
   const input=document.getElementById("themeBgPicker"); if(!input) return;
-  input.value = (which==="light" ? cfg.bgLight : cfg.bgDark) || (which==="light" ? "#f5f6f8" : "#0b0f17");
+  input.value = cfg.customBg || "#f5f6f8";
   input.oninput = async ()=>{
-    if(which==="light") cfg.bgLight=input.value; else cfg.bgDark=input.value;
+    cfg.customBg=input.value; cfg.theme="custom";
     await saveAll(); applyTheme();
   };
   input.click();
@@ -390,11 +437,8 @@ function applyFontSize(){
 function applyCustomFont(){
   const el=document.getElementById("user-font");
   let css="";
-  if(cfg.customFontCss){
-    css=(cfg.customFontCss.trim().startsWith("@")||cfg.customFontCss.trim().startsWith("/*"))
-      ? cfg.customFontCss
-      : `@import url("${cfg.customFontCss}");`;
-  }
+  if(cfg.customFontUrl) css += `@import url("${cfg.customFontUrl}");`;
+  if(cfg.customFontRaw) css += cfg.customFontRaw;
   el.innerHTML=css;
   const fontVar=cfg.customFont ? `${cfg.customFont},"Songti SC","SimSun",serif` : `"Songti SC","SimSun","STSong",serif`;
   document.documentElement.style.setProperty("--font",fontVar);
@@ -540,7 +584,6 @@ function onPickImg(e){
   r.onload=async ev=>{
     const data=ev.target.result;
     if(imgPickKey==="__memberAvatar__"&&memberPickIdx>-1){ groupMembers[memberPickIdx].avatar=data; await saveAll(); renderMembers(); return; }
-    if(imgPickKey==="__carousel__"){ carousel.push({id:"car"+Date.now(),data}); await saveAll(); renderCarousel(); renderCarouselManage(); return; }
     if(imgPickKey==="__mosaic_new__"){ if(!imgs.mosaic) imgs.mosaic=[]; if(imgs.mosaic.length<4) imgs.mosaic.push(data); await saveAll(); renderMosaic(); return; }
     if(imgPickKey.startsWith("__mosaic_")){ const idx=parseInt(imgPickKey.split("_")[2]); if(imgs.mosaic?.[idx]!==undefined){ imgs.mosaic[idx]=data; await saveAll(); renderMosaic(); } return; }
     imgs[imgPickKey]=data; await saveAll();
@@ -771,20 +814,6 @@ window.requestOppTimeChange=()=>{
   },1300+Math.random()*900);
 };
 
-// ─── Carousel ───
-function renderCarousel(){
-  const c=document.getElementById("l2Car"); if(!c) return;
-  c.innerHTML="";
-  const list=carousel.length?carousel:[{id:"def1",data:""}];
-  list.forEach(it=>{ const img=document.createElement("img"); img.className="ci ph"; if(it.data){img.src=it.data;img.removeAttribute("data-empty");}else{img.src=window.DEFAULTS.PH_SVG;img.setAttribute("data-empty","1");} c.appendChild(img); });
-}
-window.addCarouselImg = ()=>{ imgPickKey="__carousel__"; memberPickIdx=-1; document.getElementById("fpImg").value=""; document.getElementById("fpImg").click(); };
-function renderCarouselManage(){
-  const c=document.getElementById("carManage"); if(!c) return; c.innerHTML="";
-  if(!carousel.length){c.innerHTML=`<div class="empty-tip">暂无轮播图</div>`;return;}
-  carousel.forEach((it,i)=>{ const d=document.createElement("div"); d.className="manage-row"; d.innerHTML=`<img src="${it.data}" class="manage-thumb"><span class="manage-label">画片 ${i+1}</span><span class="manage-del" onclick="delCarImg('${it.id}')">删除</span>`; c.appendChild(d); });
-}
-window.delCarImg = async id=>{ carousel=carousel.filter(x=>x.id!==id); await saveAll(); renderCarousel(); renderCarouselManage(); };
 
 // ─── Mosaic ───
 function renderMosaic(){
@@ -1281,11 +1310,22 @@ async function fireReply(){
       else if(cfg.popupOn) showPopup(firstText, name2, avatar2);
       notify(firstText, name2, avatar2);
 
-      // 剩余句子依次延迟发送
+      // 剩余句子依次延迟发送（固定间隔，带真实"对方正在输入"气泡，衔接更自然）
+      const FRAGMENT_GAP_MS = 750;
       for(let fi = 1; fi < arr.length; fi++){
-        const waitMs = randInt(500, 1100);
-        showHomeTypingBar(true);
-        await new Promise(res => setTimeout(res, waitMs));
+        let fragTypingNode=null;
+        if(currentApp==="chatApp"){
+          const f=document.getElementById("chatFlow");
+          fragTypingNode=document.createElement("div"); fragTypingNode.className="row opp msg-enter";
+          const av=avatar2||window.DEFAULTS.PH_SVG;
+          fragTypingNode.innerHTML=`${cfg.showAvatar?`<div class="av-col"><img class="av" src="${av}"></div>`:""}
+            <div class="typing-pure"><span class="t-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>`;
+          f.appendChild(fragTypingNode); f.scrollTop=f.scrollHeight;
+        } else {
+          showHomeTypingBar(true);
+        }
+        await new Promise(res => setTimeout(res, FRAGMENT_GAP_MS));
+        if(fragTypingNode) fragTypingNode.remove();
         showHomeTypingBar(false);
 
         const nextTime = new Date();
@@ -1966,11 +2006,11 @@ function tally(arr){ const m={}; arr.forEach(t=>{if(!t)return;m[t]=(m[t]||0)+1;}
 
 // ─── Backup ───
 window.openBackup = ()=>{ modal("数据",`<div class="pill-btn-group"><button class="pill-btn" onclick="fullExport()">导出备份</button><button class="pill-btn" onclick="document.getElementById('fpJson').click();closeModal();">导入备份</button></div>`); };
-window.fullExport = ()=>{ const data={cfg,texts,cards,chats,members:groupMembers,shieldedCats,foldedCats,anniversaries,carousel,imgs,sounds}; const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})); a.download=`SilentChamber_${Date.now()}.json`; a.click(); toast("备份完成"); closeModal(); };
+window.fullExport = ()=>{ const data={cfg,texts,cards,chats,members:groupMembers,shieldedCats,foldedCats,anniversaries,imgs,sounds}; const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"})); a.download=`SilentChamber_${Date.now()}.json`; a.click(); toast("备份完成"); closeModal(); };
 function onPickJson(e){
   const f=e.target.files[0]; if(!f) return;
   const r=new FileReader();
-  r.onload=async ev=>{ try{ const d=JSON.parse(ev.target.result); if(d.cfg) cfg=Object.assign(cfg,d.cfg); if(d.texts) texts=d.texts; if(d.cards) cards=d.cards; if(d.chats) chats=d.chats; if(d.members) groupMembers=d.members; if(d.shieldedCats) shieldedCats=d.shieldedCats; if(d.foldedCats) foldedCats=d.foldedCats; if(d.anniversaries) anniversaries=d.anniversaries; if(d.carousel) carousel=d.carousel; if(d.imgs) imgs=d.imgs; if(d.sounds) sounds=d.sounds; await saveAll(); syncUI(); renderChats(); window.renderCards(); window.renderMembers(); renderCarousel(); renderMosaic();  toast("还原完毕"); }catch{ alert("数据损坏"); } };
+  r.onload=async ev=>{ try{ const d=JSON.parse(ev.target.result); if(d.cfg) cfg=Object.assign(cfg,d.cfg); if(d.texts) texts=d.texts; if(d.cards) cards=d.cards; if(d.chats) chats=d.chats; if(d.members) groupMembers=d.members; if(d.shieldedCats) shieldedCats=d.shieldedCats; if(d.foldedCats) foldedCats=d.foldedCats; if(d.anniversaries) anniversaries=d.anniversaries; if(d.imgs) imgs=d.imgs; if(d.sounds) sounds=d.sounds; await saveAll(); syncUI(); renderChats(); window.renderCards(); window.renderMembers(); renderMosaic();  toast("还原完毕"); }catch{ alert("数据损坏"); } };
   r.readAsText(f);
 }
 window.factoryReset = async()=>{ if(!confirm("确认销毁并重置？")) return; indexedDB.deleteDatabase(DB_NAME); setTimeout(()=>location.reload(),200); };
@@ -2292,139 +2332,99 @@ function buildTypoWelcome() {
 document.getElementById("welcome").addEventListener("click",()=>{ const w=document.getElementById("welcome"); w.classList.add("gone"); setTimeout(()=>w.style.display="none",800); chime(); });
 
 document.addEventListener("DOMContentLoaded", init);
-window.openFontModal = () => {
-  modal("字体", `
-    <div class="text-cell-label" style="margin-bottom:4px;font-size:11px;color:var(--text-mute)">字体族名</div>
-    <input class="fld" id="m_fontName" value="${escapeHtml(cfg.customFont)}" placeholder="留空使用宋体">
-    <div class="text-cell-label" style="margin:10px 0 4px;font-size:11px;color:var(--text-mute)">CSS / URL</div>
-    <textarea class="fld area" id="m_fontCss" style="min-height:60px;">${escapeHtml(cfg.customFontCss)}</textarea>
-    <button class="pill-btn" onclick="saveFont()">保存</button>
-  `);
-};
-window.saveFont = async () => {
-  cfg.customFont    = document.getElementById("m_fontName").value.trim();
-  cfg.customFontCss = document.getElementById("m_fontCss").value.trim();
-  await saveAll(); applyCustomFont(); closeModal(); toast("已更新");
-};
-// ─── Custom Home ───
-const HOME_COMPONENTS = [
-  { id:"l1-profile",   l:"个人卡片" },
-  { id:"anni-wrap",    l:"纪念日" },
-  { id:"stagger-photos", l:"交错图片" },
-  { id:"music-card",   l:"音乐" },
-  { id:"list-card",    l:"列表" },
-  { id:"polaroid-strip", l:"拍立得" },
-  { id:"aes-card",     l:"美学卡片" }   // ← 新增
-];
-
-window.openCustomHomeApp = () => {
-  openApp("customHomeApp");
-  const cssTa = document.getElementById("ch_css");
-  const jsTa  = document.getElementById("ch_js");
-  if (cssTa) cssTa.value = cfg.customHomeCss || "";
-  if (jsTa)  jsTa.value  = cfg.customHomeJs  || "";
-  renderHomeVisGrid();
-};
-
-function renderHomeVisGrid() {
-  const grid = document.getElementById("chVisGrid");
-  if (!grid) return;
-  grid.innerHTML = "";
-  HOME_COMPONENTS.forEach(comp => {
-    const vis = cfg.homeVisibility?.[comp.id] !== false;
-    const row = document.createElement("div");
-    row.className = "cfg-row";
-    row.innerHTML = `
-      <span class="cfg-label">${comp.l}</span>
-      <div class="sw ${vis?"on":""}" id="chvis_${comp.id}" onclick="toggleHomeVis('${comp.id}')">
-        <div class="sw-indicator"></div>
-      </div>`;
-    grid.appendChild(row);
-  });
+// ─── 自定义样式统一入口（字体 / 气泡 CSS / 聊天界面 CSS / 主页 CSS+JS）───
+// 主页 JS 之前挂在 applyCustomHomeStyles() 里，而 applyCustomHomeStyles() 又被
+// syncUI() 每次设置变更都调用一遍 —— 相当于每点一次开关都会把主页 JS 重跑一次，
+// 这正是"自定义主页卡到爆了"的根因。现在把 JS 执行拆出来，只在首次进入和手动
+// 保存时才跑一次。
+let _homeJsRan = false;
+function runCustomHomeJs(force){
+  if(!cfg.customHomeJs) return;
+  if(_homeJsRan && !force) return;
+  try { new Function(cfg.customHomeJs)(); _homeJsRan = true; } catch(e) { toast("JS 错误：" + e.message); }
+}
+function applyCustomHomeStyles() {
+  const styleEl = document.getElementById("user-home-css");
+  if (styleEl) styleEl.innerHTML = cfg.customHomeCss || "";
 }
 
-window.toggleHomeVis = async id => {
-  if (!cfg.homeVisibility) cfg.homeVisibility = {};
-  cfg.homeVisibility[id] = cfg.homeVisibility[id] === false ? true : false;
-  await saveAll();
-  renderHomeVisGrid();
-  applyCustomHomeStyles();
+const DEFAULT_BUBBLE_CSS =
+`.bubble {
+  border-radius: 18px;
+  padding: 10px 15px;
+  background: var(--surface);
+}
+.row.self .bubble {
+  background: var(--text);
+  color: var(--bg);
+}`;
+
+window.openCssHub = () => {
+  openApp("cssHubApp");
+  document.getElementById("ch_fontName").value = cfg.customFont || "";
+  document.getElementById("ch_fontUrl").value  = cfg.customFontUrl || "";
+  document.getElementById("ch_fontRaw").value  = cfg.customFontRaw || "";
+  const bubEl = document.getElementById("ch_bubbleCss");
+  bubEl.value = cfg.customBubble || "";
+  bubEl.placeholder = DEFAULT_BUBBLE_CSS;
+  document.getElementById("ch_chatCss").value  = cfg.customChatCss || "";
+  document.getElementById("ch_homeCss").value  = cfg.customHomeCss || "";
+  document.getElementById("ch_homeJs").value   = cfg.customHomeJs  || "";
 };
 
-window.applyCustomHome = async () => {
-  cfg.customHomeCss = document.getElementById("ch_css")?.value || "";
-  cfg.customHomeJs  = document.getElementById("ch_js")?.value  || "";
+window.applyCssHub = async () => {
+  cfg.customFont     = document.getElementById("ch_fontName").value.trim();
+  cfg.customFontUrl  = document.getElementById("ch_fontUrl").value.trim();
+  cfg.customFontRaw  = document.getElementById("ch_fontRaw").value.trim();
+  cfg.customBubble   = document.getElementById("ch_bubbleCss").value.trim();
+  cfg.customChatCss  = document.getElementById("ch_chatCss").value.trim();
+  cfg.customHomeCss  = document.getElementById("ch_homeCss").value.trim();
+  const newHomeJs    = document.getElementById("ch_homeJs").value.trim();
+  const jsChanged    = newHomeJs !== cfg.customHomeJs;
+  cfg.customHomeJs   = newHomeJs;
   await saveAll();
-  applyCustomHomeStyles();
+  applyCustomFont(); applyCustomBubble(); applyCustomChatCss(); applyCustomHomeStyles();
+  if (jsChanged) runCustomHomeJs(true);
   toast("已应用");
 };
 
-function applyCustomHomeStyles() {
-  // CSS
-  const styleEl = document.getElementById("user-home-css");
-  let css = cfg.customHomeCss || "";
-
-  // 组件可见性转 CSS
-  if (cfg.homeVisibility) {
-    HOME_COMPONENTS.forEach(comp => {
-      if (cfg.homeVisibility[comp.id] === false) {
-        css += `.${comp.id} { display: none !important; }`;
-      }
-    });
+window.resetCssField = async (which) => {
+  if (which === "font") {
+    cfg.customFont = ""; cfg.customFontUrl = ""; cfg.customFontRaw = "";
+    document.getElementById("ch_fontName").value = "";
+    document.getElementById("ch_fontUrl").value = "";
+    document.getElementById("ch_fontRaw").value = "";
+    applyCustomFont();
+  } else if (which === "bubble") {
+    cfg.customBubble = "";
+    document.getElementById("ch_bubbleCss").value = "";
+    applyCustomBubble();
+  } else if (which === "chat") {
+    cfg.customChatCss = "";
+    document.getElementById("ch_chatCss").value = "";
+    applyCustomChatCss();
+  } else if (which === "home") {
+    cfg.customHomeCss = ""; cfg.customHomeJs = "";
+    document.getElementById("ch_homeCss").value = "";
+    document.getElementById("ch_homeJs").value = "";
+    applyCustomHomeStyles();
+  } else if (which === "all") {
+    cfg.customFont = ""; cfg.customFontUrl = ""; cfg.customFontRaw = "";
+    cfg.customBubble = ""; cfg.customChatCss = "";
+    cfg.customHomeCss = ""; cfg.customHomeJs = "";
+    document.getElementById("ch_fontName").value = "";
+    document.getElementById("ch_fontUrl").value = "";
+    document.getElementById("ch_fontRaw").value = "";
+    document.getElementById("ch_bubbleCss").value = "";
+    document.getElementById("ch_chatCss").value = "";
+    document.getElementById("ch_homeCss").value = "";
+    document.getElementById("ch_homeJs").value = "";
+    applyCustomFont(); applyCustomBubble(); applyCustomChatCss(); applyCustomHomeStyles();
   }
-  if (styleEl) styleEl.innerHTML = css;
-
-  // JS（沙盒执行，报错不崩溃）
-  if (cfg.customHomeJs) {
-    try { new Function(cfg.customHomeJs)(); } catch(e) { toast("JS 错误：" + e.message); }
-  }
-}
-
-window.applyHomePreset = async name => {
-  const presets = {
-    minimal: {
-      css: ".l1-profile,.anni-wrap,.stagger-photos,.music-card,.list-card,.polaroid-strip{display:none!important}",
-      js: ""
-    },
-    photo: {
-      css: ".l1-profile,.anni-wrap,.list-card{display:none!important}.stagger-photos{grid-column:span 6;aspect-ratio:2}.polaroid-strip{grid-column:span 6}",
-      js: ""
-    },
-    reset: { css: "", js: "" }
-  };
-  const p = presets[name];
-  if (!p) return;
-  cfg.customHomeCss = p.css;
-  cfg.customHomeJs  = p.js;
-  cfg.homeVisibility = {};
   await saveAll();
-  applyCustomHomeStyles();
-  const cssTa = document.getElementById("ch_css");
-  const jsTa  = document.getElementById("ch_js");
-  if (cssTa) cssTa.value = p.css;
-  if (jsTa)  jsTa.value  = p.js;
-  renderHomeVisGrid();
-  toast("预设已载入");
+  toast("已重置");
 };
-window.openBgCssModal = () => {
-  modal("背景 / CSS", `
-    <div class="pill-btn-group">
-      <button class="pill-btn" onclick="triggerBgPick()">上传聊天背景</button>
-      <button class="pill-btn" onclick="resetBg()">重置背景</button>
-    </div>
-    <div class="text-cell-label" style="margin:12px 0 4px;font-size:11px;color:var(--text-mute)">气泡 CSS</div>
-    <textarea class="fld area" id="m_bubbleCss" style="min-height:60px;">${escapeHtml(cfg.customBubble)}</textarea>
-    <div class="text-cell-label" style="margin:10px 0 4px;font-size:11px;color:var(--text-mute)">聊天 CSS</div>
-    <textarea class="fld area" id="m_chatCss" style="min-height:60px;">${escapeHtml(cfg.customChatCss)}</textarea>
-    <button class="pill-btn" onclick="saveBgCss()">保存</button>
-  `);
-};
-window.triggerBgPick = () => { imgPickKey = "chatBg"; closeModal(); document.getElementById("fpImg").value=""; document.getElementById("fpImg").click(); };
-window.saveBgCss = async () => {
-  cfg.customBubble  = document.getElementById("m_bubbleCss").value.trim();
-  cfg.customChatCss = document.getElementById("m_chatCss").value.trim();
-  await saveAll(); applyCustomBubble(); applyCustomChatCss(); closeModal(); toast("已更新");
-};
+
 window.triggerHomeBgPick = () => {
   imgPickKey = "homeBg";
   document.getElementById("fpImg").value = "";
