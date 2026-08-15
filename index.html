@@ -517,9 +517,6 @@
         <button class="h-btn batch-toggle-btn" onclick="headerToggleBatch()">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="5" width="4" height="4" rx="1"/><rect x="3" y="12" width="4" height="4" rx="1"/><line x1="11" y1="7" x2="21" y2="7"/><line x1="11" y1="14" x2="21" y2="14"/></svg>
         </button>
-        <button class="h-btn" id="cardsBulkBtn" title="批量导入" onclick="openBulkAdd()">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </button>
         <button class="h-btn" id="cardsTxtBtn" onclick="openTxtIO()">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
         </button>
@@ -1038,8 +1035,12 @@
               <span>更新公告</span>
               <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
+            <div class="snav-item" onclick="showAuthorNote()">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 20c4.4 0 8-3.6 8-8s-3.6-8-8-8-8 3.6-8 8c0 1.4.4 2.7 1 3.9L4 20l4.3-1C9.4 19.6 10.7 20 12 20z"/></svg>
+              <span>作者碎碎念</span>
+              <svg class="cfg-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
           </div>
-          <div class="sver-tag" onclick="tapVersionTag()">v1.0</div>
         </div>
 
       </div>

@@ -1,70 +1,92 @@
 /* 幸逢 · 状态栏系统 · statusbar.css */
 
 /* ── 年鉴「状态栏」设置面板 ── */
-#sstab-statusbar { padding: 14px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+#sstab-statusbar { padding: 14px 14px 28px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
 .sb-side-switch {
-  display: flex; background: var(--surface-2); border-radius: 12px; padding: 3px; margin-bottom: 14px;
+  display: flex; background: var(--surface-2); border-radius: 12px; padding: 3px; margin-bottom: 16px;
 }
 .sb-side-opt {
   flex: 1; border: none; background: transparent; color: var(--text-mute);
-  font-size: 13px; padding: 8px 0; border-radius: 9px; cursor: pointer;
+  font-size: 13px; padding: 9px 0; border-radius: 9px; cursor: pointer; font-weight: 500; letter-spacing: .5px;
   transition: background .2s var(--ease), color .2s var(--ease);
 }
 .sb-side-opt.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-s); }
 
-.sb-preview-wrap { display: flex; justify-content: center; margin-bottom: 14px; }
-.sb-frame-wrap { width: 100%; aspect-ratio: 3 / 4; border-radius: 16px; overflow: hidden; background: #0b0e15; }
+.sb-preview-wrap { display: flex; justify-content: center; margin-bottom: 18px; }
+.sb-frame-wrap {
+  width: 100%; aspect-ratio: 3 / 4; border-radius: 20px; overflow: hidden; background: #0b0e15;
+  border: 1px solid var(--border); box-shadow: var(--shadow-s);
+}
 .sb-frame { width: 100%; height: 100%; border: 0; display: block; background: transparent; }
 
-.sb-chip-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 10px; -webkit-overflow-scrolling: touch; }
+/* 分组卡片：把方案 / 背景 / 字段 / HTML / 系统设置划成独立的、有呼吸感的区块 */
+.sb-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+  padding: 14px 14px 16px; margin-bottom: 14px;
+}
+.sb-sec-label {
+  font-size: 11px; color: var(--text-mute); letter-spacing: 1.5px; font-weight: 600;
+  text-transform: uppercase; margin-bottom: 12px; opacity: .68;
+}
+
+.sb-chip-row { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 12px; -webkit-overflow-scrolling: touch; }
 .sb-chip-row::-webkit-scrollbar { display: none; }
 .sb-chip {
-  flex: 0 0 auto; border: 1px solid var(--border); background: var(--surface);
-  color: var(--text-mute); font-size: 12px; padding: 6px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  flex: 0 0 auto; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text-mute); font-size: 12.5px; padding: 7px 15px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  transition: background .2s var(--ease), color .2s var(--ease), border-color .2s var(--ease);
 }
-.sb-chip.on { background: var(--text); color: var(--surface); border-color: var(--text); }
-.sb-chip-add { color: var(--text); font-weight: 700; }
+.sb-chip.on { background: var(--text); color: var(--surface); border-color: var(--text); font-weight: 600; }
+.sb-chip-add { color: var(--text); font-weight: 700; width: 30px; padding: 7px 0; text-align: center; }
 
-.sb-preset-ops { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.sb-preset-ops { display: flex; align-items: center; gap: 8px; }
 .sb-preset-ops .pill-btn { flex: 1; width: auto; height: 38px; }
 .sb-preset-name { flex: 2; }
 
-.sb-bg-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.sb-bg-row { display: flex; align-items: center; gap: 14px; }
 .sb-bg-thumb {
-  width: 52px; height: 52px; border-radius: 12px; background: var(--surface-2) center/cover no-repeat;
+  width: 56px; height: 56px; border-radius: 14px; background: var(--surface-2) center/cover no-repeat;
   border: 1px solid var(--border); cursor: pointer; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
 }
-.sb-bg-ops { display: flex; gap: 8px; flex-wrap: wrap; }
-.sb-bg-ops .pill-btn { flex: 1; width: auto; height: 36px; }
+.sb-bg-thumb-tip { font-size: 18px; color: var(--text-mute); opacity: .5; }
+.sb-bg-ops { display: flex; gap: 8px; flex-wrap: wrap; flex: 1; }
+.sb-bg-ops .pill-btn { flex: 1; width: auto; height: 38px; min-width: 84px; }
 
-.sb-field-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.sb-field-list { display: flex; flex-direction: column; gap: 12px; }
 .sb-field-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.sb-field-lbl { flex: 0 0 auto; font-size: 12px; color: var(--text-mute); min-width: 44px; }
+.sb-field-lbl { flex: 0 0 auto; font-size: 12.5px; color: var(--text-mute); min-width: 44px; }
 .sb-field-ctl { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; }
-.sb-field-input, .sb-mode-select, .sb-cat-select { flex: 1; min-width: 0; }
+.sb-field-input, .sb-mode-select, .sb-cat-select {
+  flex: 1; min-width: 0; height: 34px; border: 1px solid var(--border); border-radius: 9px;
+  padding: 0 10px; background: var(--surface-2); color: var(--text); font-size: 12.5px; outline: none;
+}
 .sb-mode-select { flex: 0 0 78px; }
 .sb-reroll-btn {
-  flex: 0 0 auto; width: 30px; height: 30px; border: none; border-radius: 8px;
-  background: var(--bg-soft); color: var(--text); cursor: pointer; font-size: 15px;
+  flex: 0 0 auto; width: 32px; height: 32px; border: none; border-radius: 9px;
+  background: var(--surface-2); color: var(--text); cursor: pointer; font-size: 15px;
+  border: 1px solid var(--border); transition: transform .2s var(--ease);
 }
+.sb-reroll-btn:active { transform: rotate(90deg); }
 
 .sb-html-area {
-  width: 100%; height: 26vh; resize: vertical; margin-bottom: 10px;
-  font-family: ui-monospace, monospace; font-size: 11.5px; line-height: 1.5;
-  padding: 10px; border: 1px solid var(--border); border-radius: 10px;
+  width: 100%; height: 24vh; resize: vertical; margin-bottom: 10px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11.5px; line-height: 1.6;
+  padding: 12px; border: 1px solid var(--border); border-radius: 12px;
   background: var(--surface-2); color: var(--text);
 }
-.sb-editor-actions { display: flex; gap: 8px; margin-bottom: 18px; }
-.sb-editor-actions .pill-btn { flex: 1; width: auto; }
+.sb-editor-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sb-editor-actions .pill-btn { flex: 1; width: auto; min-width: 100px; height: 38px; }
 
-.sb-set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.sb-set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sb-set-row + .sb-set-row { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
 .sb-set-row span:first-child { font-size: 13px; }
-.sb-set-ctl { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
-.sb-set-ctl input[type="range"] { flex: 1; max-width: 140px; }
+.sb-set-ctl { display: flex; align-items: center; gap: 10px; flex: 1; justify-content: flex-end; }
+.sb-set-ctl input[type="range"] { flex: 1; max-width: 140px; accent-color: var(--text); }
 #sbIntervalDisp { font-size: 12px; color: var(--text-mute); min-width: 30px; text-align: right; }
 .sb-set-actions { flex-wrap: wrap; }
-.sb-set-actions .pill-btn { flex: 1; width: auto; min-width: 88px; }
+.sb-set-actions .pill-btn { flex: 1; width: auto; min-width: 88px; height: 38px; }
 
 .pill-btn.ghost { background: transparent; }
 

@@ -122,7 +122,35 @@ function maybeShowUpdateLog(){
 window.showUpdateLog = ()=>{
   modal("更新说明", `${_renderUpdateLogHtml()}<button class="pill-btn" onclick="closeModal()">知道了</button>`);
 };
-window.tapVersionTag = ()=>{};
+
+const AUTHOR_LINKS = [
+  { n:"传讯", d:"随手记录一些碎碎念与日常", u:"https://aielin17.github.io/milk/" },
+  { n:"画廊", d:"存放零散的画作与视觉练习", u:"https://aielin17.github.io/-/" },
+  { n:"游戏厅", d:"几个自制的小游戏合集", u:"https://aielin01.github.io/game" },
+  { n:"塔罗", d:"一个可以抽牌占卜的小工具", u:"https://aielin17.github.io/Tarot/" }
+];
+window.showAuthorNote = ()=>{
+  modal("作者碎碎念", `
+    <div class="author-note">
+      <div class="an-lead">「幸逢」这个名字，取的是「不早不晚，恰好相逢」的意思——希望每一个打开它的人，都能在这里遇到一点点属于自己的、安静的陪伴。这个网站由 Milk 一点点摸索、打磨而成，开发过程里 Claude 作为搭档参与了大量代码实现，算是人与 AI 一起完成的一次小小尝试。</div>
+      <div class="an-credit">
+        <span class="an-tag">制作人 · Milk</span>
+        <span class="an-tag">合作伙伴 · Claude</span>
+      </div>
+      <div class="an-notice">本网站禁止二次修改 / 二次转载 / 商用。如果你喜欢它，最好的支持方式就是把它原样分享给需要的人。</div>
+      <div class="an-lead" style="padding-top:2px;">如果想看看 Milk 的其他角落，这里还有几个正在生长中的小站，除「幸逢」外均可自由二创、开源使用：</div>
+      <div class="an-links">
+        ${AUTHOR_LINKS.map(l=>`
+          <a class="an-link" href="${escapeAttr(l.u)}" target="_blank" rel="noopener">
+            <span class="txt"><span class="n">${escapeHtml(l.n)}</span><span class="d">${escapeHtml(l.d)}</span></span>
+            <span class="u">${escapeHtml(l.u.replace(/^https?:\/\//,""))}</span>
+          </a>`).join("")}
+      </div>
+      <div class="an-foot">谢谢你愿意花时间待在这里，也谢谢一路陪着「幸逢」变得更完整的每一个人。</div>
+      <button class="pill-btn" onclick="closeModal()">知道了</button>
+    </div>
+  `);
+};
 
 const TEXT_GROUPS = [
   { h:"开屏", keys:[{k:"welcomeText",l:"副文"}], isCfg:true },
@@ -419,14 +447,28 @@ function bindCustomThemeOrb(){
   const el=document.getElementById("customThemeOrb"); if(!el||el.dataset.bound) return;
   el.dataset.bound="1";
   let timer=null, longPressed=false;
-  const start=()=>{ longPressed=false; timer=setTimeout(()=>{ longPressed=true; if(navigator.vibrate) navigator.vibrate(22); openCustomThemeColorPicker(); },420); };
-  const cancel=()=>{ if(timer) clearTimeout(timer); timer=null; };
-  const end=(ev)=>{ ev.stopPropagation(); cancel(); if(!longPressed) window.setTheme("custom"); };
+  // 注意：<input type="color"> 的 .click() 必须在真实用户手势（touchend/mouseup 等）里同步调用，
+  // 否则移动端浏览器会因失去"用户激活"上下文而静默拦截取色器弹出——这也是长按曾经无效的原因。
+  // 因此这里 setTimeout 只负责标记"已达到长按时长"，真正的 openCustomThemeColorPicker() 调用
+  // 挪到 end（touchend/mouseup）里同步触发。
+  const start=(ev)=>{
+    longPressed=false;
+    timer=setTimeout(()=>{ longPressed=true; if(navigator.vibrate) navigator.vibrate(22); el.classList.add("longpress-armed"); },420);
+  };
+  const cancel=()=>{ if(timer) clearTimeout(timer); timer=null; el.classList.remove("longpress-armed"); };
+  const end=(ev)=>{
+    ev.stopPropagation();
+    const wasLongPress=longPressed;
+    cancel();
+    if(wasLongPress){ if(ev.cancelable) ev.preventDefault(); openCustomThemeColorPicker(); }
+    else window.setTheme("custom");
+  };
   el.addEventListener("mousedown",start);
   el.addEventListener("touchstart",start,{passive:true});
   el.addEventListener("mouseup",end);
   el.addEventListener("touchend",end);
   el.addEventListener("mouseleave",cancel);
+  el.addEventListener("touchcancel",cancel,{passive:true});
   el.addEventListener("touchmove",cancel,{passive:true});
 }
 window.openCustomThemeColorPicker = ()=>{
@@ -749,8 +791,8 @@ async function notify(text,name,avatar){
     // 会抛出 "Illegal constructor" 而被原来的 catch{} 静默吞掉——
     // 必须通过 Service Worker 派发才能在安卓 / 大多数移动端正常显示通知。
     const reg=_swReg||(navigator.serviceWorker&&await navigator.serviceWorker.getRegistration());
-    if(reg&&reg.showNotification){ await reg.showNotification(name||"温语",opts); return; }
-    new Notification(name||"温语",opts);
+    if(reg&&reg.showNotification){ await reg.showNotification(name||"彼",opts); return; }
+    new Notification(name||"彼",opts);
   }catch{}
 }
 
@@ -1288,7 +1330,7 @@ async function fireReply(){
     const stickerPool=stickers.filter(s=>!s.shielded);
     if(stickerPool.length && Math.random()*100<STICKER_CHANCE){
       const stk=stickerPool[Math.floor(Math.random()*stickerPool.length)];
-      let nameS=texts.opp_name||"温语", avatarS=imgs.oppAvatar||"";
+      let nameS=texts.opp_name||"彼", avatarS=imgs.oppAvatar||"";
       if(cfg.groupMode&&groupMembers.length){ const ms=groupMembers[Math.floor(Math.random()*groupMembers.length)]; nameS=ms.name; avatarS=ms.avatar||window.DEFAULTS.PH_SVG; }
       chats.push({sender:"opp",text:"[表情包]",sticker:true,stickerId:stk.id,time:fmtTime(now),timeWithSec:fmtTime(now,true),date:fmtDate(now),ts:now.getTime(),name:nameS,avatar:avatarS});
       if(currentApp==="chatApp"){ const f=document.getElementById("chatFlow"); const near=f.scrollHeight-f.scrollTop-f.clientHeight<80; if(!near) unreadCount++; appendNewChats(); }
@@ -1362,7 +1404,7 @@ async function fireReply(){
   }
   let quote="";
   if(!isLyric&&cfg.quoteOn&&Math.random()<0.3){ const my=chats.filter(c=>c.sender==="self").slice(-10); if(my.length) quote=my[Math.floor(Math.random()*my.length)].text; }
-  let name=texts.opp_name||"温语", avatar=imgs.oppAvatar||"";
+  let name=texts.opp_name||"彼", avatar=imgs.oppAvatar||"";
   if(cfg.groupMode&&groupMembers.length){ const m=groupMembers[Math.floor(Math.random()*groupMembers.length)]; name=m.name; avatar=m.avatar||window.DEFAULTS.PH_SVG; }
   chats.push({sender:"opp",text,translation:trans,time:fmtTime(now),timeWithSec:fmtTime(now,true),date:fmtDate(now),ts:now.getTime(),lyric:isLyric,quote,name,avatar,fragments});
   if(currentApp==="chatApp"){ const f=document.getElementById("chatFlow"); const near=f.scrollHeight-f.scrollTop-f.clientHeight<80; if(!near) unreadCount++; appendNewChats(); }
@@ -1569,15 +1611,43 @@ window.openAddCard = ()=>{
   const catHtml=cats.length
     ?`<div class="cat-dd" id="cat-dd"><button class="fld cat-dd-btn" type="button" onclick="toggleCatDd(event)"><span id="cat-dd-label">${escapeHtml(first)}</span><span class="cat-dd-arrow">›</span></button><div class="cat-dd-list" id="cat-dd-list">${cats.map(c=>`<div class="cat-dd-item" onclick="pickCat('${escapeHtml(c)}')">${escapeHtml(c)}</div>`).join("")}<div class="cat-dd-item cat-dd-new" onclick="pickCatNew()">＋ 新增分类</div></div></div><input class="fld" id="m_c" value="${escapeHtml(first)}" style="display:none">`
     :`<input class="fld" id="m_c" placeholder="分类名" value="未命名">`;
-  modal("新增",`<textarea class="fld area" id="m_t" placeholder="…"></textarea><textarea class="fld area" id="m_tr" placeholder="译文" style="min-height:50px;"></textarea>${catHtml}<button class="pill-btn" onclick="addCardConfirm()">完成</button>`);
+  window._addCardMode = "single";
+  modal("新增字卡",`
+    <div class="add-mode-switch">
+      <button class="ams-opt on" id="amsSingle" onclick="window.setAddCardMode('single')">单独</button>
+      <button class="ams-opt" id="amsBulk" onclick="window.setAddCardMode('bulk')">批量</button>
+    </div>
+    <div id="addCardSingle">
+      <textarea class="fld area" id="m_t" placeholder="…（歌词 / 译文等特殊字卡见提示）"></textarea>
+      <textarea class="fld area" id="m_tr" placeholder="译文（可选，如为歌词可填对应译文）" style="min-height:50px;"></textarea>
+      ${catHtml}
+      <div class="fld-tip">提示：分类名填「歌词库」时，内容会按行拆成多张字卡，译文按行一一对应，适合整段歌词与译文的批量收录。</div>
+    </div>
+    <div id="addCardBulk" style="display:none;">
+      <div class="fld-tip">【分组名】→ 内容，【翻译】分隔译文</div>
+      <textarea class="fld area" id="m_bulk" style="min-height:140px;"></textarea>
+    </div>
+    <button class="pill-btn" id="addCardSubmit" onclick="addCardConfirm()">完成</button>
+  `);
+};
+window.setAddCardMode = (mode)=>{
+  window._addCardMode = mode;
+  const single=document.getElementById("addCardSingle"), bulk=document.getElementById("addCardBulk"), submit=document.getElementById("addCardSubmit");
+  document.getElementById("amsSingle")?.classList.toggle("on", mode==="single");
+  document.getElementById("amsBulk")?.classList.toggle("on", mode==="bulk");
+  if(single) single.style.display = mode==="single" ? "" : "none";
+  if(bulk) bulk.style.display = mode==="bulk" ? "" : "none";
+  if(submit) submit.textContent = mode==="bulk" ? "导入" : "完成";
 };
 window.toggleCatDd=(e)=>{ e.stopPropagation(); const l=document.getElementById("cat-dd-list"); if(!l) return; const open=l.classList.toggle("open"); if(open) setTimeout(()=>document.addEventListener("click",closeCatDd,{once:true}),0); };
 window.closeCatDd=()=>{ const l=document.getElementById("cat-dd-list"); if(l) l.classList.remove("open"); };
 window.pickCat=(cat)=>{ const lbl=document.getElementById("cat-dd-label"); const inp=document.getElementById("m_c"); if(lbl) lbl.textContent=cat; if(inp){ inp.value=cat; inp.style.display="none"; } const dd=document.getElementById("cat-dd"); if(dd) dd.style.display=""; closeCatDd(); };
 window.pickCatNew=()=>{ closeCatDd(); const dd=document.getElementById("cat-dd"); const inp=document.getElementById("m_c"); if(dd) dd.style.display="none"; if(inp){ inp.style.display=""; inp.value=""; inp.focus(); } };
 window.selectAddCat=(el,cat)=>{ document.querySelectorAll(".cat-chip").forEach(c=>c.classList.remove("active")); el.classList.add("active"); const inp=document.getElementById("m_c"); if(inp) inp.value=cat; };
-window.addCardConfirm = async()=>{ const t=document.getElementById("m_t").value.trim(); const tr=document.getElementById("m_tr").value.trim(); const c=document.getElementById("m_c").value.trim()||"未命名"; if(!t) return; if(c==="歌词库"){t.split("\n").map(l=>l.trim()).filter(l=>l).forEach((line,i)=>cards.push({id:"c"+Date.now()+i,text:line,translation:tr,cat:c}));}else{cards.push({id:"c"+Date.now(),text:t,translation:tr,cat:c});} await saveAll(); window.renderCards(); closeModal(); };
-window.openBulkAdd = ()=>{ modal("批量导入",`<div class="fld-tip">【分组名】→ 内容，【翻译】分隔译文</div><textarea class="fld area" id="m_bulk" style="min-height:140px;"></textarea><button class="pill-btn" onclick="bulkAddDo()">导入</button>`); };
+window.addCardConfirm = async()=>{
+  if(window._addCardMode==="bulk"){ await window.bulkAddDo(); return; }
+  const t=document.getElementById("m_t").value.trim(); const tr=document.getElementById("m_tr").value.trim(); const c=document.getElementById("m_c").value.trim()||"未命名"; if(!t) return; if(c==="歌词库"){t.split("\n").map(l=>l.trim()).filter(l=>l).forEach((line,i)=>cards.push({id:"c"+Date.now()+i,text:line,translation:tr,cat:c}));}else{cards.push({id:"c"+Date.now(),text:t,translation:tr,cat:c});} await saveAll(); window.renderCards(); closeModal();
+};
 function parseTxtToCards(raw){ let cur="未命名",n=0,out=[]; raw.split("\n").forEach(line=>{ const t=line.trim(); if(!t) return; const mm=t.match(/^【(.+)】$/); if(mm){cur=mm[1].trim();return;} let txt=t,tr=""; if(t.includes("【翻译】")){const p=t.split("【翻译】");txt=p[0].trim();tr=p[1].trim();} out.push({id:"c"+Date.now()+(n++),text:txt,translation:tr,cat:cur}); }); return out; }
 async function importWithMergePrompt(newCards){ if(!newCards.length) return;
   modal("导入方式", `<div style="font-size:calc(var(--fs)*.88);color:var(--text-mute);margin-bottom:14px;">共 <b style="color:var(--text)">${newCards.length}</b> 条</div>
@@ -1611,7 +1681,6 @@ window.switchCardsTab = tab => {
   cardsActiveTab = tab;
   document.querySelectorAll("#cardsApp .stab").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
   document.querySelectorAll("#cardsApp .stab-panel").forEach(p=>p.classList.toggle("active", p.id==="cstab-"+tab));
-  document.getElementById("cardsBulkBtn")?.classList.toggle("hidden", tab!=="cards");
   document.getElementById("cardsTxtBtn")?.classList.toggle("hidden", tab!=="cards");
   const btn=document.querySelector(".batch-toggle-btn");
   if(btn){ btn.classList.toggle("hidden", tab==="statusbar"); btn.style.opacity=(tab==="stickers"?isStickerBatchSelecting:isBatchSelecting)?"1":".5"; }
