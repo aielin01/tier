@@ -1,118 +1,101 @@
-/* ═══════════════════════════════════════════════
-   幸逢 · 状态栏系统 · statusbar.css
-   只负责"外壳"（App 容器、卡片框、编辑器）的样式；
-   状态栏本体在 sandboxed <iframe> 内以自己的 <style> 渲染，
-   两者互不干扰、不会有 class / id 冲突。
-   ═══════════════════════════════════════════════ */
+/* 幸逢 · 状态栏系统 · statusbar.css */
 
-/* ── 入口：年鉴内的状态栏系统入口 ── */
-.sb-entry {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 16px; margin: 0 0 14px;
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
-  box-shadow: var(--shadow-s); cursor: pointer;
-  transition: transform .25s var(--ease), box-shadow .25s var(--ease);
+/* ── 年鉴「状态栏」设置面板 ── */
+#sstab-statusbar { padding: 14px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+.sb-side-switch {
+  display: flex; background: var(--surface-2); border-radius: 12px; padding: 3px; margin-bottom: 14px;
 }
-.sb-entry:active { transform: scale(.98); }
-.sb-entry-main { display: flex; align-items: center; gap: 10px; }
-.sb-entry-icon {
-  width: 34px; height: 34px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  background: var(--bg-soft); color: var(--text);
-}
-.sb-entry-icon svg { width: 18px; height: 18px; }
-.sb-entry-text { display: flex; flex-direction: column; gap: 2px; }
-.sb-entry-title { font-size: 14px; font-weight: 600; }
-.sb-entry-sub { font-size: 11px; color: var(--text-mute); }
-.sb-entry-arrow { color: var(--text-mute); }
-.sb-entry-arrow svg { width: 16px; height: 16px; }
-
-/* ── 聊天头像可点触发提示（不改变原有布局，仅提示可交互） ── */
-.av.statusbar-trigger, .h2-avatar.statusbar-trigger { cursor: pointer; }
-
-/* ── App 容器内的舞台 ── */
-#statusbarApp .sb-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px; }
-
-.sb-stage { display: flex; gap: 12px; width: 100%; }
-.sb-stage.sb-single { justify-content: center; }
-.sb-stage.sb-dual { align-items: stretch; }
-
-.sb-card {
-  flex: 1; min-width: 0; display: flex; flex-direction: column;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-  overflow: hidden; box-shadow: var(--shadow-s);
-}
-.sb-stage.sb-single .sb-card { max-width: 420px; width: 100%; }
-
-.sb-card-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 12px; font-size: 12px; color: var(--text-mute);
-  border-bottom: 1px solid var(--border); background: var(--surface-2);
-}
-.sb-edit-btn {
-  border: none; background: var(--bg-soft); color: var(--text);
-  font-size: 11px; padding: 4px 10px; border-radius: 999px; cursor: pointer;
-}
-.sb-edit-btn:active { opacity: .7; }
-
-/* iframe 容器：固定比例，避免内容加载/变量替换过程中的高度跳变引起卡顿感 */
-.sb-frame-wrap { width: 100%; aspect-ratio: 3 / 4; background: #0b0f17; }
-.sb-stage.sb-single .sb-frame-wrap { aspect-ratio: 4 / 5; }
-.sb-frame {
-  width: 100%; height: 100%; border: 0; display: block;
-  background: transparent;
-}
-
-/* ── 编辑器（复用全局 modal，本区块只定义内部结构） ── */
-.sb-editor { display: flex; flex-direction: column; gap: 12px; max-height: 62vh; }
-.sb-editor-tabs { display: flex; gap: 6px; }
-.sb-etab {
-  flex: 1; padding: 8px 0; border: none; border-radius: 10px;
-  background: var(--surface-2); color: var(--text-mute); font-size: 12px; cursor: pointer;
+.sb-side-opt {
+  flex: 1; border: none; background: transparent; color: var(--text-mute);
+  font-size: 13px; padding: 8px 0; border-radius: 9px; cursor: pointer;
   transition: background .2s var(--ease), color .2s var(--ease);
 }
-.sb-etab.on { background: var(--text); color: var(--surface); }
-.sb-editor-body { overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 2px; }
+.sb-side-opt.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-s); }
 
-.sb-field-list { display: flex; flex-direction: column; gap: 10px; }
-.sb-field-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.sb-field-lbl { flex: 0 0 auto; font-size: 12px; color: var(--text-mute); min-width: 64px; }
-.sb-field-ctl { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; }
-.sb-field-input, .sb-mode-select, .sb-cat-select {
-  flex: 1; min-width: 0; font-size: 13px; padding: 7px 10px;
-  border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); color: var(--text);
+.sb-preview-wrap { display: flex; justify-content: center; margin-bottom: 14px; }
+.sb-frame-wrap { width: 100%; aspect-ratio: 3 / 4; border-radius: 16px; overflow: hidden; background: #0b0e15; }
+.sb-frame { width: 100%; height: 100%; border: 0; display: block; background: transparent; }
+
+.sb-chip-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 10px; -webkit-overflow-scrolling: touch; }
+.sb-chip-row::-webkit-scrollbar { display: none; }
+.sb-chip {
+  flex: 0 0 auto; border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-mute); font-size: 12px; padding: 6px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap;
 }
-.sb-mode-select { flex: 0 0 84px; }
+.sb-chip.on { background: var(--text); color: var(--surface); border-color: var(--text); }
+.sb-chip-add { color: var(--text); font-weight: 700; }
+
+.sb-preset-ops { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.sb-preset-ops .pill-btn { flex: 1; width: auto; height: 38px; }
+.sb-preset-name { flex: 2; }
+
+.sb-bg-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.sb-bg-thumb {
+  width: 52px; height: 52px; border-radius: 12px; background: var(--surface-2) center/cover no-repeat;
+  border: 1px solid var(--border); cursor: pointer; flex: 0 0 auto;
+}
+.sb-bg-ops { display: flex; gap: 8px; flex-wrap: wrap; }
+.sb-bg-ops .pill-btn { flex: 1; width: auto; height: 36px; }
+
+.sb-field-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.sb-field-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sb-field-lbl { flex: 0 0 auto; font-size: 12px; color: var(--text-mute); min-width: 44px; }
+.sb-field-ctl { flex: 1; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.sb-field-input, .sb-mode-select, .sb-cat-select { flex: 1; min-width: 0; }
+.sb-mode-select { flex: 0 0 78px; }
 .sb-reroll-btn {
   flex: 0 0 auto; width: 30px; height: 30px; border: none; border-radius: 8px;
   background: var(--bg-soft); color: var(--text); cursor: pointer; font-size: 15px;
 }
-.sb-reroll-btn:active { transform: rotate(120deg); transition: transform .3s var(--ease); }
 
 .sb-html-area {
-  width: 100%; height: 34vh; resize: vertical;
-  font-family: var(--codeFont, ui-monospace, monospace); font-size: 11.5px; line-height: 1.5;
+  width: 100%; height: 26vh; resize: vertical; margin-bottom: 10px;
+  font-family: ui-monospace, monospace; font-size: 11.5px; line-height: 1.5;
   padding: 10px; border: 1px solid var(--border); border-radius: 10px;
   background: var(--surface-2); color: var(--text);
 }
-.sb-editor-actions { display: flex; gap: 8px; }
-.sb-hint { font-size: 11px; color: var(--text-mute); line-height: 1.6; }
-.sb-hint code { background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
+.sb-editor-actions { display: flex; gap: 8px; margin-bottom: 18px; }
+.sb-editor-actions .pill-btn { flex: 1; width: auto; }
 
-.sb-settings { display: flex; flex-direction: column; gap: 16px; }
-.sb-set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sb-set-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
 .sb-set-row span:first-child { font-size: 13px; }
 .sb-set-ctl { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
 .sb-set-ctl input[type="range"] { flex: 1; max-width: 140px; }
-#sbIntervalDisp { font-size: 12px; color: var(--text-mute); min-width: 44px; text-align: right; }
+#sbIntervalDisp { font-size: 12px; color: var(--text-mute); min-width: 30px; text-align: right; }
 .sb-set-actions { flex-wrap: wrap; }
+.sb-set-actions .pill-btn { flex: 1; width: auto; min-width: 88px; }
 
-.pill-btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--text-mute); }
-.pill-btn.danger { background: #e5484d; color: #fff; }
+.pill-btn.ghost { background: transparent; }
 
-.sb-empty-tip { text-align: center; padding: 30px 0; color: var(--text-mute); font-size: 12px; }
+.sb-empty-tip { text-align: center; padding: 20px 0; color: var(--text-mute); font-size: 12px; }
 
-@media (max-width: 380px) {
-  .sb-stage.sb-dual { gap: 8px; }
-  .sb-card-bar { padding: 7px 10px; }
+/* ── 聊天头像可点触发提示 ── */
+.av.statusbar-trigger { cursor: pointer; }
+
+/* ── 聊天内观赏性弹层：占据画面中心，独立于 App 导航，仅挂载一个 iframe ── */
+.sb-viewer-mask {
+  position: absolute; inset: 0; z-index: 900;
+  background: rgba(0,0,0,0); backdrop-filter: blur(0px); -webkit-backdrop-filter: blur(0px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .22s ease, background .22s ease, backdrop-filter .22s ease;
 }
+.sb-viewer-mask.on {
+  opacity: 1; pointer-events: auto;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.sb-viewer-card {
+  position: relative; width: min(92vw, 460px); height: min(82vh, 680px);
+  border-radius: 24px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  transform: scale(.94); transition: transform .22s ease;
+}
+.sb-viewer-mask.on .sb-viewer-card { transform: scale(1); }
+.sb-viewer-frame-wrap { width: 100%; height: 100%; }
+.sb-viewer-close {
+  position: absolute; top: 12px; right: 12px; z-index: 2;
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: rgba(0,0,0,.4); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.sb-viewer-close svg { width: 16px; height: 16px; }

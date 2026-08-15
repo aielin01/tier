@@ -905,7 +905,7 @@ function buildMsgInto(frag, m, idx, ctx, lastDateRef){
     : `<div class="bubble message ${isSelf?"message-sent":"message-received"}" data-idx="${idx}">${escapeHtml(m.text).replace(/\n/g,"<br>")}</div>
       ${m.translation?`<div class="bubble-translation ${transClass}" id="trans-${idx}">${escapeHtml(m.translation)}</div>`:""}`;
   row.innerHTML=`
-    ${ctx.showAv?`<div class="av-col"><img class="av statusbar-trigger" src="${av}" onclick="event.stopPropagation();window.openStatusbarFor && window.openStatusbarFor('${isSelf?"self":"opp"}')">${avMetaHtml}</div>`:""}
+    ${ctx.showAv?`<div class="av-col"><img class="av statusbar-trigger" src="${av}" onclick="event.stopPropagation();window.openStatusbarViewer && window.openStatusbarViewer('${isSelf?"self":"opp"}')">${avMetaHtml}</div>`:""}
     <div class="stack">
       ${showNm?`<div class="name-tag">${escapeHtml(nm)}</div>`:""}
       ${bodyHtml}
@@ -1614,11 +1614,12 @@ window.switchCardsTab = tab => {
   document.getElementById("cardsBulkBtn")?.classList.toggle("hidden", tab!=="cards");
   document.getElementById("cardsTxtBtn")?.classList.toggle("hidden", tab!=="cards");
   const btn=document.querySelector(".batch-toggle-btn");
-  if(btn) btn.style.opacity=(tab==="stickers"?isStickerBatchSelecting:isBatchSelecting)?"1":".5";
+  if(btn){ btn.classList.toggle("hidden", tab==="statusbar"); btn.style.opacity=(tab==="stickers"?isStickerBatchSelecting:isBatchSelecting)?"1":".5"; }
   if(tab==="stickers") window.renderStickers();
+  if(tab==="statusbar") window.renderSbCards && window.renderSbCards();
 };
-window.headerToggleBatch = ()=>{ if(cardsActiveTab==="stickers") window.toggleStickerBatchMode(); else window.toggleBatchMode(); };
-window.headerAdd = ()=>{ if(cardsActiveTab==="stickers") window.openAddSticker(); else window.openAddCard(); };
+window.headerToggleBatch = ()=>{ if(cardsActiveTab==="stickers") window.toggleStickerBatchMode(); else if(cardsActiveTab==="statusbar") {} else window.toggleBatchMode(); };
+window.headerAdd = ()=>{ if(cardsActiveTab==="stickers") window.openAddSticker(); else if(cardsActiveTab==="statusbar") window.sbOpenAddCard && window.sbOpenAddCard(); else window.openAddCard(); };
 
 // ─── 表情包库 ───
 window.renderStickers = () => {
@@ -2080,7 +2081,6 @@ window.openApp = id=>{
   if(id==="cardsApp")      { window.renderCards(); window.renderStickers(); }
   if(id==="groupApp")      window.renderMembers();
   if(id==="statsApp")      { renderStats(); renderSurveys(); }
-  if(id==="statusbarApp")  { window.renderStatusbarApp && window.renderStatusbarApp(); window.sbStartTicker && window.sbStartTicker(); }
   if(id==="textsApp")      renderTextsApp();
   if(id==="chatApp"){
     // Only fully rebuild the message list the first time it's ever rendered.
@@ -2104,7 +2104,7 @@ window.openApp = id=>{
     }
   }
 };
-window.closeApp = id=>{ document.getElementById(id).classList.remove("active"); if(currentApp===id){currentApp=null;setDockActive(""); if(id==="chatApp"){ if(typingNode){typingNode.remove();typingNode=null;} if(replyTimer) showHomeTypingBar(true); } if(id==="statusbarApp"){ window.sbStopTicker && window.sbStopTicker(); }} };
+window.closeApp = id=>{ document.getElementById(id).classList.remove("active"); if(currentApp===id){currentApp=null;setDockActive(""); if(id==="chatApp"){ if(typingNode){typingNode.remove();typingNode=null;} if(replyTimer) showHomeTypingBar(true); }} };
 
 // ─── Music ───
 function bindMusicPlayer(){
@@ -2669,6 +2669,7 @@ window.switchStatsTab = function(tab) {
   document.querySelectorAll('#statsApp .stab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('#statsApp .stab-panel').forEach(p => p.classList.toggle('active', p.id === 'sstab-' + tab));
   if (tab === "survey") renderSurveys();
+  if (tab === "statusbar") window.renderStatusbarSettings && window.renderStatusbarSettings();
 };
 
 function renderSurveys(){
