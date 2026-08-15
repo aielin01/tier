@@ -3036,7 +3036,7 @@
 }
 .stheme-opt.active .stheme-orb {
   border-color: var(--text);
-  box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--text), inset 0 1px 3px rgba(0,0,0,.07);
+  box-shadow: 0 0 0 2px var(--bg-soft), 0 0 0 3.5px var(--text), inset 0 1px 3px rgba(0,0,0,.07);
 }
 .stheme-opt.light .stheme-orb { background: #f5f5f0; }
 .stheme-opt.dark  .stheme-orb { background: #1a1a1a; }
@@ -3050,8 +3050,8 @@
   animation: orb-armed-pulse .42s ease forwards;
 }
 @keyframes orb-armed-pulse {
-  0% { transform: scale(1); box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--text), inset 0 1px 3px rgba(0,0,0,.07); }
-  100% { transform: scale(1.14); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4.5px var(--text), 0 0 14px 2px rgba(0,0,0,.18); }
+  0% { transform: scale(1); box-shadow: 0 0 0 2px var(--bg-soft), 0 0 0 3.5px var(--text), inset 0 1px 3px rgba(0,0,0,.07); }
+  100% { transform: scale(1.14); box-shadow: 0 0 0 2px var(--bg-soft), 0 0 0 4.5px var(--text), 0 0 14px 2px rgba(0,0,0,.18); }
 }
 
 /* ─── Size grid ─── */

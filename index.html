@@ -566,6 +566,11 @@
           </div>
         </div>
         <div class="deck" id="sbCardDeck"></div>
+        <div class="batch-bar" id="sbBatchBar">
+          <span class="cnt" id="sbBatchCnt"></span>
+          <button class="bbtn" onclick="window.sbToggleSelectAll()">全选</button>
+          <button class="bbtn danger" onclick="window.sbBatchDelete()">删</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1210,6 +1215,7 @@
   <input type="file" id="fpSurvey" accept=".json"         style="display:none">
   <input type="file" id="fpStatusbar" accept=".json"      style="display:none">
   <input type="file" id="fpStatusbarBg" accept="image/*"  style="display:none">
+  <input type="file" id="fpSbCard" accept=".txt"          style="display:none">
 
 </div>
 

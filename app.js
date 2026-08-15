@@ -132,13 +132,13 @@ const AUTHOR_LINKS = [
 window.showAuthorNote = ()=>{
   modal("作者碎碎念", `
     <div class="author-note">
-      <div class="an-lead">「幸逢」这个名字，取的是「不早不晚，恰好相逢」的意思——希望每一个打开它的人，都能在这里遇到一点点属于自己的、安静的陪伴。这个网站由 Milk 一点点摸索、打磨而成，开发过程里 Claude 作为搭档参与了大量代码实现，算是人与 AI 一起完成的一次小小尝试。</div>
+      <div class="an-lead">「幸逢」——不早不晚，恰好相逢。由 Milk 制作，Claude 协助开发。</div>
       <div class="an-credit">
         <span class="an-tag">制作人 · Milk</span>
         <span class="an-tag">合作伙伴 · Claude</span>
       </div>
-      <div class="an-notice">本网站禁止二次修改 / 二次转载 / 商用。如果你喜欢它，最好的支持方式就是把它原样分享给需要的人。</div>
-      <div class="an-lead" style="padding-top:2px;">如果想看看 Milk 的其他角落，这里还有几个正在生长中的小站，除「幸逢」外均可自由二创、开源使用：</div>
+      <div class="an-notice">禁止二次修改 / 转载 / 商用，欢迎原样分享。</div>
+      <div class="an-lead" style="padding-top:2px;">Milk 的其他小站（均可自由二创）：</div>
       <div class="an-links">
         ${AUTHOR_LINKS.map(l=>`
           <a class="an-link" href="${escapeAttr(l.u)}" target="_blank" rel="noopener">
@@ -146,7 +146,6 @@ window.showAuthorNote = ()=>{
             <span class="u">${escapeHtml(l.u.replace(/^https?:\/\//,""))}</span>
           </a>`).join("")}
       </div>
-      <div class="an-foot">谢谢你愿意花时间待在这里，也谢谢一路陪着「幸逢」变得更完整的每一个人。</div>
       <button class="pill-btn" onclick="closeModal()">知道了</button>
     </div>
   `);
@@ -1618,13 +1617,11 @@ window.openAddCard = ()=>{
       <button class="ams-opt" id="amsBulk" onclick="window.setAddCardMode('bulk')">批量</button>
     </div>
     <div id="addCardSingle">
-      <textarea class="fld area" id="m_t" placeholder="…（歌词 / 译文等特殊字卡见提示）"></textarea>
+      <textarea class="fld area" id="m_t" placeholder="…"></textarea>
       <textarea class="fld area" id="m_tr" placeholder="译文（可选，如为歌词可填对应译文）" style="min-height:50px;"></textarea>
       ${catHtml}
-      <div class="fld-tip">提示：分类名填「歌词库」时，内容会按行拆成多张字卡，译文按行一一对应，适合整段歌词与译文的批量收录。</div>
     </div>
     <div id="addCardBulk" style="display:none;">
-      <div class="fld-tip">【分组名】→ 内容，【翻译】分隔译文</div>
       <textarea class="fld area" id="m_bulk" style="min-height:140px;"></textarea>
     </div>
     <button class="pill-btn" id="addCardSubmit" onclick="addCardConfirm()">完成</button>
@@ -1671,7 +1668,13 @@ window.batchDelete = async()=>{ if(!selected.length) return; cards=cards.filter(
 window.batchShield = async v=>{ if(!selected.length) return; cards.forEach(c=>{if(selected.includes(c.id))c.shielded=v;}); selected=[]; await saveAll(); window.renderCards(); };
 window.batchMove = ()=>{ if(!selected.length) return; const cs=Array.from(new Set(cards.map(c=>c.cat))); const opts=cs.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join(""); modal("批量移组",`<select class="fld" id="m_tg">${opts}</select><input class="fld" id="m_new" placeholder="或新建分组"><button class="pill-btn" onclick="batchMoveDo()">移</button>`); };
 window.batchMoveDo = async()=>{ const tg=document.getElementById("m_new").value.trim()||document.getElementById("m_tg").value; if(!tg) return; cards.forEach(c=>{if(selected.includes(c.id))c.cat=tg;}); selected=[]; await saveAll(); window.renderCards(); closeModal(); };
-window.openTxtIO = ()=>{ modal("TXT",`<div class="pill-btn-group"><button class="pill-btn" onclick="exportCards()">导出</button><button class="pill-btn" onclick="document.getElementById('fpCard').click();closeModal();">导入</button></div>`); };
+window.openTxtIO = ()=>{
+  if(cardsActiveTab==="statusbar"){
+    modal("TXT",`<div class="pill-btn-group"><button class="pill-btn" onclick="window.sbExportCards()">导出</button><button class="pill-btn" onclick="document.getElementById('fpSbCard').click();closeModal();">导入</button></div>`);
+    return;
+  }
+  modal("TXT",`<div class="pill-btn-group"><button class="pill-btn" onclick="exportCards()">导出</button><button class="pill-btn" onclick="document.getElementById('fpCard').click();closeModal();">导入</button></div>`);
+};
 window.exportCards = ()=>{ const mm={}; cards.forEach(c=>{(mm[c.cat]=mm[c.cat]||[]).push(c.translation?(c.text+"【翻译】"+c.translation):c.text);}); let s=""; for(const k in mm) s+=`【${k}】\n`+mm[k].join("\n")+"\n\n"; const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([s],{type:"text/plain;charset=utf-8"})); a.download=`字卡_${Date.now()}.txt`; a.click(); closeModal(); };
 function onPickCardTxt(e){ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=async ev=>{ await importWithMergePrompt(parseTxtToCards(ev.target.result)); }; r.readAsText(f); }
 window.toggleBatchMode = ()=>{ isBatchSelecting=!isBatchSelecting; const btn=document.querySelector(".batch-toggle-btn"); if(btn) btn.style.opacity=isBatchSelecting?"1":".5"; if(!isBatchSelecting) selected=[]; window.renderCards(); };
@@ -1687,7 +1690,7 @@ window.switchCardsTab = tab => {
   if(tab==="stickers") window.renderStickers();
   if(tab==="statusbar") window.renderSbCards && window.renderSbCards();
 };
-window.headerToggleBatch = ()=>{ if(cardsActiveTab==="stickers") window.toggleStickerBatchMode(); else if(cardsActiveTab==="statusbar") {} else window.toggleBatchMode(); };
+window.headerToggleBatch = ()=>{ if(cardsActiveTab==="stickers") window.toggleStickerBatchMode(); else if(cardsActiveTab==="statusbar") window.sbToggleBatchMode && window.sbToggleBatchMode(); else window.toggleBatchMode(); };
 window.headerAdd = ()=>{ if(cardsActiveTab==="stickers") window.openAddSticker(); else if(cardsActiveTab==="statusbar") window.sbOpenAddCard && window.sbOpenAddCard(); else window.openAddCard(); };
 
 // ─── 表情包库 ───
@@ -1916,7 +1919,7 @@ function renderStats() {
   const ovData = [
     { n: allReal.length,  l: "对话总计", sub: `歌词 ${lyricMsgs.length} 条`, full: true },
     { n: selfMsgs.length, l: "我",        sub: `落字 ${selfChars}` },
-    { n: oppMsgs.length,  l: "彼",        sub: `落字 ${oppChars}` },
+    { n: oppMsgs.length,  l: texts.opp_name || "彼", sub: `落字 ${oppChars}` },
     { n: cards.length,    l: "字卡",       sub: `屏蔽 ${cards.filter(c=>c.shielded).length}` },
     { n: avgLen,          l: "均长",       sub: "字 / 条" }
   ];
@@ -2022,7 +2025,7 @@ function renderStats() {
   const tabData = [
     { l: "我", arr: selfMsgs.map(m => m.text) },
     {
-      l: "彼",
+      l: texts.opp_name || "彼",
       arr: (() => {
         const a = [];
         oppMsgs.forEach(m =>
@@ -2800,10 +2803,10 @@ window.openRecordSummary = (id) => {
     html += `<div class="qf-sum-item">
       <div class="qf-sum-q">${escapeHtml(a.q)}</div>
       <div class="qf-sum-row">我　${escapeHtml(a.self)}</div>
-      <div class="qf-sum-row">彼　${escapeHtml(a.opp)}</div>`;
+      <div class="qf-sum-row">${escapeHtml(texts.opp_name || "彼")}　${escapeHtml(a.opp)}</div>`;
     if (a.oppComment !== undefined){
       html += `<div class="qf-sum-row">我的评论　${escapeHtml(a.selfComment || "（无）")}</div>
-        <div class="qf-sum-row">彼的评论　${escapeHtml(a.oppComment)}</div>`;
+        <div class="qf-sum-row">${escapeHtml(texts.opp_name || "彼")}的评论　${escapeHtml(a.oppComment)}</div>`;
     }
     html += `</div>`;
   });
@@ -3047,10 +3050,12 @@ window.closeSurveyFull = () => {
   document.getElementById("surveyFull").classList.remove("on");
 };
 
+function isBlankQ(q){ return !q.options || !q.options.length; }
+
 window.startSurveyFill = (id) => {
   const survey = surveys.find(s=>s.id===id);
   if (!survey || !survey.questions.length){ toast("问卷为空","warn"); return; }
-  surveyFill = { surveyId:id, survey, qIndex:0, selfIdx:-1, oppIdx:-1, stage:"pick", reselectMsg:"", curAnswer:null, answers:[] };
+  surveyFill = { surveyId:id, survey, qIndex:0, selfIdx:-1, oppIdx:-1, selfText:"", oppText:"", answered:false, stage:"pick", reselectMsg:"", curAnswer:null, answers:[] };
   openSurveyFull();
   renderFillStep();
 };
@@ -3066,9 +3071,21 @@ window.fillSelectSelf = (i) => {
   renderFillStep();
 };
 
+window.fillSubmitBlank = () => {
+  const sf = surveyFill; if (!sf || sf.stage!=="pick" || sf.answered) return;
+  const ta = document.getElementById("qfBlankInput");
+  const val = ta ? ta.value.trim() : "";
+  if (!val){ toast("请先填写"); return; }
+  sf.selfText = val;
+  sf.oppText = generateOppComment();
+  sf.answered = true;
+  renderFillStep();
+};
+
 // "重选"：邀请对方重新选择，1~3秒缓冲，对方可能拒绝重选请求
 window.fillReselect = () => {
-  const sf = surveyFill; if (!sf || sf.stage!=="pick" || sf.selfIdx===-1) return;
+  const sf = surveyFill; const q = sf && sf.survey.questions[sf.qIndex];
+  if (!sf || sf.stage!=="pick" || (isBlankQ(q) ? !sf.answered : sf.selfIdx===-1)) return;
   sf.stage = "reselecting";
   sf.reselectMsg = "对方正在重新选择…";
   renderFillStep();
@@ -3080,8 +3097,8 @@ window.fillReselect = () => {
       renderFillStep();
       sfTimer = setTimeout(()=>{ sf.stage="pick"; renderFillStep(); }, 1100);
     } else {
-      const q = sf.survey.questions[sf.qIndex];
-      sf.oppIdx = randInt(0, q.options.length-1);
+      if (isBlankQ(q)) sf.oppText = generateOppComment();
+      else sf.oppIdx = randInt(0, q.options.length-1);
       sf.stage = "reselect-done";
       sf.reselectMsg = "选择完毕";
       renderFillStep();
@@ -3091,14 +3108,17 @@ window.fillReselect = () => {
 };
 
 window.fillNext = () => {
-  const sf = surveyFill; if (!sf || sf.stage!=="pick" || sf.selfIdx===-1) return;
+  const sf = surveyFill; const q = sf && sf.survey.questions[sf.qIndex];
+  if (!sf || sf.stage!=="pick" || (isBlankQ(q) ? !sf.answered : sf.selfIdx===-1)) return;
   proceedAfterPick();
 };
 
 function proceedAfterPick(){
   const sf = surveyFill;
   const q = sf.survey.questions[sf.qIndex];
-  sf.curAnswer = { q: q.text, self: q.options[sf.selfIdx], opp: q.options[sf.oppIdx] };
+  sf.curAnswer = isBlankQ(q)
+    ? { q: q.text, self: sf.selfText, opp: sf.oppText }
+    : { q: q.text, self: q.options[sf.selfIdx], opp: q.options[sf.oppIdx] };
   if (q.needComment){
     sf.stage = "comment-wait";
     renderFillStep();
@@ -3126,13 +3146,15 @@ window.fillNextFromComment = () => {
 function nextQuestion(){
   const sf = surveyFill;
   sf.qIndex++;
-  sf.selfIdx = -1; sf.oppIdx = -1; sf.stage = "pick"; sf.reselectMsg = ""; sf.curAnswer = null;
+  sf.selfIdx = -1; sf.oppIdx = -1; sf.selfText = ""; sf.oppText = ""; sf.answered = false;
+  sf.stage = "pick"; sf.reselectMsg = ""; sf.curAnswer = null;
   if (sf.qIndex >= sf.survey.questions.length) renderFillSummary();
   else renderFillStep();
 }
 
 function oppBlock(q, sf, dim){
-  return `<div class="qf-opp${dim?" dim":""}"><div class="qf-opp-label">对方选择</div><div class="qf-opp-value">${escapeHtml(q.options[sf.oppIdx])}</div></div>`;
+  const val = isBlankQ(q) ? sf.oppText : q.options[sf.oppIdx];
+  return `<div class="qf-opp${dim?" dim":""}"><div class="qf-opp-label">对方选择</div><div class="qf-opp-value">${escapeHtml(val)}</div></div>`;
 }
 
 function indicatorHtml(msg, spinning){
@@ -3148,13 +3170,24 @@ function renderFillStep(){
   document.getElementById("sfFullTitle").innerText = sf.survey.title;
   document.getElementById("sfFullProgress").innerText = `${sf.qIndex+1} / ${sf.survey.questions.length}`;
 
-  let html = `<div class="qf-question">${escapeHtml(q.text)}</div><div class="qf-options">`;
-  q.options.forEach((opt,i)=>{
-    html += `<div class="qf-opt ${i===sf.selfIdx?"selected":""}" onclick="fillSelectSelf(${i})">${escapeHtml(opt)}</div>`;
-  });
-  html += `</div>`;
+  const blank = isBlankQ(q);
+  let html = `<div class="qf-question">${escapeHtml(q.text)}</div>`;
+  if (blank){
+    if (!sf.answered){
+      html += `<textarea class="fld area" id="qfBlankInput" placeholder="写下你的答案…"></textarea>
+        <button class="pill-btn" onclick="fillSubmitBlank()">提交</button>`;
+    } else {
+      html += `<div class="qf-options"><div class="qf-opt selected">${escapeHtml(sf.selfText)}</div></div>`;
+    }
+  } else {
+    html += `<div class="qf-options">`;
+    q.options.forEach((opt,i)=>{
+      html += `<div class="qf-opt ${i===sf.selfIdx?"selected":""}" onclick="fillSelectSelf(${i})">${escapeHtml(opt)}</div>`;
+    });
+    html += `</div>`;
+  }
 
-  if (sf.selfIdx > -1){
+  if (blank ? sf.answered : sf.selfIdx > -1){
     if (sf.stage === "pick"){
       html += oppBlock(q,sf) + `<div class="qf-actions">
         <button class="pill-btn" onclick="fillReselect()">重选</button>
@@ -3186,10 +3219,10 @@ function renderFillSummary(){
     html += `<div class="qf-sum-item">
       <div class="qf-sum-q">${escapeHtml(a.q)}</div>
       <div class="qf-sum-row">我　${escapeHtml(a.self)}</div>
-      <div class="qf-sum-row">彼　${escapeHtml(a.opp)}</div>`;
+      <div class="qf-sum-row">${escapeHtml(texts.opp_name || "彼")}　${escapeHtml(a.opp)}</div>`;
     if (a.oppComment !== undefined){
       html += `<div class="qf-sum-row">我的评论　${escapeHtml(a.selfComment || "（无）")}</div>
-        <div class="qf-sum-row">彼的评论　${escapeHtml(a.oppComment)}</div>`;
+        <div class="qf-sum-row">${escapeHtml(texts.opp_name || "彼")}的评论　${escapeHtml(a.oppComment)}</div>`;
     }
     html += `</div>`;
   });
