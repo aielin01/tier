@@ -1,0 +1,6 @@
+{
+  "name": "幸逢",
+  "description": "幸逢 - 拟真聊天与个性化主页应用",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
