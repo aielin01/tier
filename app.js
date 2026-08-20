@@ -171,8 +171,10 @@ window.checkLock = function() {
   localStorage.setItem("sc_authed", "true");
   document.documentElement.classList.add("is-authenticated");
   const ls = document.getElementById("lockScreen");
-  if (ls) ls.classList.add("unlocked");
-  setTimeout(() => { if (ls) ls.style.display = "none"; }, 500);
+  if (ls) {
+    ls.classList.add("gone");
+    setTimeout(() => { ls.style.display = "none"; }, 500);
+  }
 };
 
 // ── Application Navigation ──
@@ -1086,9 +1088,103 @@ window.factoryReset = async function() {
   window.location.reload();
 };
 
+// ── Welcome Screen Animation & Auto-Dismiss ──
+window.initWelcomeScreen = function() {
+  const welcome = document.getElementById("welcome");
+  if (!welcome) return;
+
+  // 1. Render Typography Stage (幸逢)
+  const stage = document.getElementById("wTypoStage");
+  if (stage && !stage.innerHTML.trim()) {
+    stage.innerHTML = `
+      <div class="w-char-row" style="font-size:clamp(36px,10vw,52px);font-weight:300;letter-spacing:clamp(8px,2.5vw,16px);margin-bottom:8px;">
+        <span class="w-char grad revealed" style="--char-delay:0.1s;--char-dur:1s;">幸</span>
+        <span class="w-char grad revealed" style="--char-delay:0.35s;--char-dur:1s;">逢</span>
+      </div>
+      <div class="w-hairline"></div>
+      <div class="w-seal"></div>
+    `;
+  }
+
+  // 2. Render Subtitle
+  const wText = document.getElementById("wText");
+  if (wText) {
+    wText.textContent = window.cfg.welcomeText || "幸逢于此 · 别来无恙";
+  }
+
+  // 3. Canvas Ambient Particles
+  const canvas = document.getElementById("wCanvas");
+  let animId = null;
+  if (canvas) {
+    const ctx = canvas.getContext("2d");
+    let width = canvas.width = welcome.clientWidth || window.innerWidth || 390;
+    let height = canvas.height = welcome.clientHeight || window.innerHeight || 844;
+
+    const particles = Array.from({ length: 32 }, () => ({
+      x: Math.random() * width,
+      y: Math.random() * height,
+      r: Math.random() * 1.5 + 0.5,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: -Math.random() * 0.35 - 0.1,
+      alpha: Math.random() * 0.6 + 0.2
+    }));
+
+    function draw() {
+      if (!welcome || welcome.classList.contains("gone")) return;
+      ctx.clearRect(0, 0, width, height);
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark" || !document.documentElement.getAttribute("data-theme");
+      const color = isDark ? "255,255,255" : "30,25,20";
+
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.y < 0) { p.y = height; p.x = Math.random() * width; }
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${color},${p.alpha})`;
+        ctx.fill();
+      });
+
+      animId = requestAnimationFrame(draw);
+    }
+    draw();
+
+    window.addEventListener("resize", () => {
+      if (welcome && canvas) {
+        width = canvas.width = welcome.clientWidth || window.innerWidth || 390;
+        height = canvas.height = welcome.clientHeight || window.innerHeight || 844;
+      }
+    });
+  }
+
+  // 4. Dismiss Handling (Click anywhere or Auto-fade after 2.4s)
+  let dismissed = false;
+  window.dismissWelcome = function() {
+    if (dismissed) return;
+    dismissed = true;
+    if (animId) cancelAnimationFrame(animId);
+    welcome.classList.add("gone");
+    setTimeout(() => {
+      welcome.style.display = "none";
+    }, 1200);
+  };
+
+  welcome.addEventListener("click", window.dismissWelcome);
+  welcome.addEventListener("touchstart", window.dismissWelcome, { passive: true });
+
+  // Auto-dismiss after 2.4 seconds so the user is never stuck
+  setTimeout(() => {
+    window.dismissWelcome();
+  }, 2400);
+};
+
 // ── Entry Initialization ──
 window.addEventListener("DOMContentLoaded", async () => {
   await window.loadAll();
+  window.initWelcomeScreen();
   if (window.initVoiceSystem) window.initVoiceSystem();
   if (window.initStatusbarSystem) window.initStatusbarSystem();
   initFileUploaders();

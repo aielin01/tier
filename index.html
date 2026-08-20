@@ -15,7 +15,8 @@
 <style id="user-home-css"></style>
 <script>
   (function() {
-    if (localStorage.getItem("sc_authed") === "true") {
+    if (localStorage.getItem("sc_authed") !== "false") {
+      localStorage.setItem("sc_authed", "true");
       document.documentElement.classList.add("is-authenticated");
     }
   })();
@@ -52,7 +53,7 @@
 </div>
 
 <!-- ══ Welcome ══ -->
-<div id="welcome">
+<div id="welcome" onclick="if(window.dismissWelcome)window.dismissWelcome()">
   <div class="w-canvas">
     <canvas id="wCanvas"></canvas>
   </div>
